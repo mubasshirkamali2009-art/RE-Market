@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client"; // adjust to your actual auth-client path
+import toast, { Toaster } from "react-hot-toast";
 
 export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
   const [formData, setFormData] = useState({
@@ -7,36 +9,51 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-    if (!formData.email || !formData.password) {
-      setError("Please enter both email and password.");
+    const loadingToast = toast.loading("Signing you in...");
+
+    const { data, error } = await authClient.signIn.email({
+      email: formData.email,
+      password: formData.password,
+      callbackURL: "/",
+    });
+
+    toast.dismiss(loadingToast);
+    setIsSubmitting(false);
+
+    if (error) {
+      setError(error.message || "Invalid email or password.");
+      toast.error(error.message || "Invalid email or password.");
       return;
     }
 
-    setError("");
-    console.log("Sign in data:", formData);
-
-    // Hand the data up to whatever handles real authentication.
-    if (onSignInSuccess) onSignInSuccess(formData);
+    toast.success("Welcome back!");
+    onSignInSuccess?.(data);
   }
 
   function handleGoogleClick() {
-    console.log("Continue with Google clicked");
+    authClient.signIn.social({ provider: "google", callbackURL: "/" });
   }
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.sidePanel}>
-        <div style={styles.brand}>
-          <div style={styles.brandIcon}>
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+    <div className="flex min-h-screen flex-col bg-white text-[#1f2d22] sm:flex-row">
+      <Toaster position="top-center" />
+
+      {/* Side panel: compact banner on mobile, full hero panel from sm up */}
+      <div className="relative flex flex-col justify-center bg-[#eef3e2] px-6 py-8 sm:flex-1 sm:px-12 sm:py-12 lg:px-16">
+        <div className="mb-6 flex items-center gap-2.5 sm:absolute sm:top-10 sm:left-12 sm:mb-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1f4d3c] sm:h-9 sm:w-9">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18" className="sm:w-5 sm:h-5">
               <path
                 d="M12 2L4 6V12C4 16.5 7.5 20.5 12 22C16.5 20.5 20 16.5 20 12V6L12 2Z"
                 stroke="white"
@@ -45,57 +62,70 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
               />
             </svg>
           </div>
-          <span style={styles.brandName}>ReSell Hub</span>
+          <span className="text-base font-bold text-[#1f4d3c] sm:text-lg">ReSell Hub</span>
         </div>
 
-        <div style={styles.sideContent}>
-          <h1 style={styles.sideHeading}>Welcome back!</h1>
-          <p style={styles.sideText}>
-            Log in to continue buying, selling, and chatting with your
-            community on ReSell Hub.
-          </p>
-        </div>
+        <div className="flex items-center gap-5 sm:block sm:max-w-[380px]">
+          <div className="flex-1 sm:flex-none">
+            <h1 className="text-xl font-bold leading-tight text-[#1f4d3c] sm:text-3xl lg:text-[32px]">
+              Welcome back!
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-[#4b6354] sm:mt-3 sm:text-[15px]">
+              Log in to continue buying, selling, and chatting with your
+              community on ReSell Hub.
+            </p>
+          </div>
 
-        <div style={styles.illustration}>
-          <svg width="140" height="160" viewBox="0 0 140 160" fill="none">
-            <path d="M30 50 L35 30 H105 L110 50 Z" fill="#1f4d3c" />
-            <rect x="20" y="50" width="100" height="100" rx="6" fill="#2c6b4f" />
-            <path
-              d="M55 30 V20 a15 15 0 0 1 30 0 V30"
-              stroke="#1f4d3c"
-              strokeWidth="6"
+          {/* Illustration: small inline badge on mobile, full showcase from sm up */}
+          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-[#dce8c8] sm:mx-auto sm:mt-10 sm:h-[220px] sm:w-[220px] sm:flex-shrink">
+            <svg
+              width="140"
+              height="160"
+              viewBox="0 0 140 160"
               fill="none"
-            />
-            <g transform="translate(70 100)">
+              className="h-10 w-9 sm:h-40 sm:w-[122px]"
+            >
+              <path d="M30 50 L35 30 H105 L110 50 Z" fill="#1f4d3c" />
+              <rect x="20" y="50" width="100" height="100" rx="6" fill="#2c6b4f" />
               <path
-                d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
-                fill="#eef3e2"
+                d="M55 30 V20 a15 15 0 0 1 30 0 V30"
+                stroke="#1f4d3c"
+                strokeWidth="6"
+                fill="none"
               />
-              <path
-                d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
-                fill="#eef3e2"
-                transform="rotate(120)"
-              />
-              <path
-                d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
-                fill="#eef3e2"
-                transform="rotate(240)"
-              />
-            </g>
-          </svg>
+              <g transform="translate(70 100)">
+                <path
+                  d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
+                  fill="#eef3e2"
+                />
+                <path
+                  d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
+                  fill="#eef3e2"
+                  transform="rotate(120)"
+                />
+                <path
+                  d="M0 -28 L8 -14 L-2 -14 L6 0 L-22 -2 L-10 -14 L-20 -14 Z"
+                  fill="#eef3e2"
+                  transform="rotate(240)"
+                />
+              </g>
+            </svg>
+          </div>
         </div>
       </div>
 
-      <div style={styles.formPanel}>
-        <div style={styles.formContainer}>
-          <h2 style={styles.heading}>Log in</h2>
-          <p style={styles.subtitle}>Continue to ReSell Hub.</p>
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 sm:px-6 sm:py-12">
+        <div className="w-full max-w-[380px]">
+          <h2 className="text-2xl font-bold sm:text-[26px]">Log in</h2>
+          <p className="mt-1.5 text-sm text-[#6b7a6d]">Continue to ReSell Hub.</p>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.field}>
-              <label style={styles.label} htmlFor="email">Email address</label>
+          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4 sm:mt-7 sm:gap-[18px]">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-[#33402f]" htmlFor="email">
+                Email address
+              </label>
               <input
-                style={styles.input}
+                className="w-full rounded-[10px] border border-[#d8e0cf] bg-white px-3.5 py-2.5 text-sm text-[#1f2d22] outline-none focus:border-[#2c6b4f]"
                 id="email"
                 name="email"
                 type="email"
@@ -105,13 +135,17 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
               />
             </div>
 
-            <div style={styles.field}>
-              <div style={styles.fieldHead}>
-                <label style={styles.label} htmlFor="password">Password</label>
-                <span style={styles.forgotLink}>Forgot password?</span>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="mb-1.5 block text-sm font-semibold text-[#33402f]" htmlFor="password">
+                  Password
+                </label>
+                <span className="cursor-pointer text-[13px] font-semibold text-[#2c6b4f]">
+                  Forgot password?
+                </span>
               </div>
               <input
-                style={styles.input}
+                className="w-full rounded-[10px] border border-[#d8e0cf] bg-white px-3.5 py-2.5 text-sm text-[#1f2d22] outline-none focus:border-[#2c6b4f]"
                 id="password"
                 name="password"
                 type="password"
@@ -121,20 +155,34 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
               />
             </div>
 
-            {error && <p style={styles.error}>{error}</p>}
+            {error && (
+              <p className="rounded-lg bg-[#fbeaea] px-3 py-2 text-[13px] text-[#a13a3a]">
+                {error}
+              </p>
+            )}
 
-            <button type="submit" style={styles.btnPrimary}>
-              Login
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-1 w-full rounded-[10px] bg-[#2c6b4f] py-3 text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? "Logging in..." : "Login"}
             </button>
           </form>
 
-          <div style={styles.divider}>
-            <span style={styles.dividerLine}></span>
-            <span style={styles.dividerText}>or</span>
-            <span style={styles.dividerLine}></span>
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-[#e4e9dc]" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca99a]">
+              or
+            </span>
+            <span className="h-px flex-1 bg-[#e4e9dc]" />
           </div>
 
-          <button type="button" style={styles.btnGoogle} onClick={handleGoogleClick}>
+          <button
+            type="button"
+            onClick={handleGoogleClick}
+            className="flex w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#d8e0cf] bg-white py-2.5 text-sm font-semibold text-[#2c3e2d]"
+          >
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.616z"/>
               <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
@@ -144,9 +192,12 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
             Continue with Google
           </button>
 
-          <p style={styles.footerText}>
+          <p className="mt-6 text-center text-sm text-[#6b7a6d]">
             Don&apos;t have an account?{" "}
-            <span style={styles.link} onClick={onSwitchToSignUp}>
+            <span
+              className="cursor-pointer font-semibold text-[#2c6b4f]"
+              onClick={onSwitchToSignUp}
+            >
               Sign up
             </span>
           </p>
@@ -155,49 +206,3 @@ export default function SignIn({ onSwitchToSignUp, onSignInSuccess }) {
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    display: "flex",
-    minHeight: "100vh",
-    flexWrap: "wrap",
-    fontFamily: "Inter, sans-serif",
-    background: "#fff",
-    color: "#1f2d22",
-  },
-  sidePanel: {
-    flex: "1 1 380px",
-    minWidth: "320px",
-    background: "#eef3e2",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    padding: "48px",
-    position: "relative",
-  },
-  brand: { display: "flex", alignItems: "center", gap: "10px", position: "absolute", top: "40px", left: "48px" },
-  brandIcon: { width: "36px", height: "36px", borderRadius: "10px", background: "#1f4d3c", display: "flex", alignItems: "center", justifyContent: "center" },
-  brandName: { fontSize: "18px", fontWeight: 700, color: "#1f4d3c" },
-  sideContent: { maxWidth: "380px" },
-  sideHeading: { fontSize: "32px", fontWeight: 700, lineHeight: 1.25, color: "#1f4d3c" },
-  sideText: { marginTop: "12px", fontSize: "15px", lineHeight: 1.6, color: "#4b6354" },
-  illustration: { width: "220px", height: "220px", margin: "40px auto 0", borderRadius: "32px", background: "#dce8c8", display: "flex", alignItems: "center", justifyContent: "center" },
-  formPanel: { flex: "1 1 380px", minWidth: "320px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "48px 24px" },
-  formContainer: { width: "100%", maxWidth: "380px" },
-  heading: { fontSize: "26px", fontWeight: 700 },
-  subtitle: { marginTop: "6px", fontSize: "14px", color: "#6b7a6d" },
-  form: { marginTop: "28px", display: "flex", flexDirection: "column", gap: "18px" },
-  field: {},
-  fieldHead: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-  forgotLink: { fontSize: "13px", fontWeight: 600, color: "#2c6b4f", cursor: "pointer" },
-  label: { display: "block", marginBottom: "7px", fontSize: "14px", fontWeight: 600, color: "#33402f" },
-  input: { width: "100%", padding: "11px 14px", border: "1px solid #d8e0cf", borderRadius: "10px", fontSize: "14px", fontFamily: "inherit", color: "#1f2d22", background: "#fff", outline: "none" },
-  error: { fontSize: "13px", color: "#a13a3a", background: "#fbeaea", padding: "8px 12px", borderRadius: "8px" },
-  btnPrimary: { marginTop: "4px", width: "100%", padding: "12px", border: "none", borderRadius: "10px", background: "#2c6b4f", color: "#fff", fontSize: "15px", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" },
-  divider: { display: "flex", alignItems: "center", gap: "12px", margin: "22px 0" },
-  dividerLine: { flex: 1, height: "1px", background: "#e4e9dc" },
-  dividerText: { fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#9ca99a" },
-  btnGoogle: { width: "100%", padding: "11px", border: "1px solid #d8e0cf", borderRadius: "10px", background: "#fff", color: "#2c3e2d", fontSize: "14px", fontWeight: 600, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" },
-  footerText: { marginTop: "26px", textAlign: "center", fontSize: "14px", color: "#6b7a6d" },
-  link: { color: "#2c6b4f", fontWeight: 600, cursor: "pointer" },
-};
