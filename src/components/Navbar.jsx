@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { authClient, useSession } from "@/lib/auth-client";
 import {
   ShoppingBag,
   Search,
@@ -22,6 +23,7 @@ import {
   Moon,
 } from "lucide-react";
 
+
 export default function ReMarketNavbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,7 +31,9 @@ export default function ReMarketNavbar() {
   const [dark, setDark] = useState(false);
   const profileRef = useRef(null);
   const pathname = usePathname();
-
+const {data:session ,isPending} = useSession()
+console.log("session data in Navbar:" , session , "Is pending:" , isPending
+)
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -66,7 +70,19 @@ export default function ReMarketNavbar() {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
+
+  const {} =useSession()
+
+  const handleLogout = async () => {
+      setProfileOpen(false)
+      await authClient.signOut()
+  }
+
   return (
+
+
+
+
     <div className={dark ? "dark" : ""}>
       <div
         className="font-sans transition-colors duration-300"
@@ -122,6 +138,8 @@ export default function ReMarketNavbar() {
                   );
                 })}
               </div>
+
+              
 
               {/* Tablet nav — md only, icon-only compact pills */}
               <div className="hidden md:flex lg:hidden items-center gap-1">
@@ -231,7 +249,7 @@ export default function ReMarketNavbar() {
                       </div>
                       <div className="py-1.5 border-t border-slate-100 dark:border-white/10">
                         <button
-                          onClick={() => setProfileOpen(false)}
+                          onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
                         >
                           <LogOut size={16} />
