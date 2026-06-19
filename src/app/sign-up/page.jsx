@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client"; // adjust to your actual auth-client path
 import toast, { Toaster } from "react-hot-toast";
-
+import Link from "next/link";
 export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
   const [formData, setFormData] = useState({
     name: "",
@@ -222,15 +222,12 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
             Continue with Google
           </button>
 
-          <p className="mt-6 text-center text-sm text-[#6b7a6d]">
-            Already have an account?{" "}
-            <span
-              className="cursor-pointer font-semibold text-[#2c6b4f]"
-              onClick={onSwitchToSignIn}
-            >
-              Log in
-            </span>
-          </p>
+         <p className="mt-6 text-center text-sm text-[#6b7a6d]">
+  allready have an account?
+          <Link href="/sign-in" className="text-green-800 font-bold">
+           SIGN In
+          </Link>
+</p>
         </div>
       </div>
     </div>

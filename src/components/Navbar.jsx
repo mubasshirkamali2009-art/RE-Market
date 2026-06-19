@@ -34,6 +34,12 @@ export default function ReMarketNavbar() {
 const {data:session ,isPending} = useSession()
 console.log("session data in Navbar:" , session , "Is pending:" , isPending
 )
+const user =  session?.user;
+
+
+
+
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -187,24 +193,9 @@ console.log("session data in Navbar:" , session , "Is pending:" , isPending
                   {dark ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
                 </button>
 
-                {/* Login / Register button — hardcoded, always visible, navigates on click */}
-                <div className="hidden sm:flex items-center gap-2">
-                  <Link
-                    href="/sign-in"
-                    className="text-sm font-medium px-4 py-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    href="/sign-up"
-                    className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                  >
-                    Sign up
-                  </Link>
-                </div>
-
-                {/* Profile dropdown — hardcoded, always visible alongside login button */}
-                <div className="relative" ref={profileRef}>
+           {  user ?
+                <>
+                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={() => setProfileOpen((o) => !o)}
                     className={`flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full transition-colors duration-200 ${
@@ -212,7 +203,11 @@ console.log("session data in Navbar:" , session , "Is pending:" , isPending
                     }`}
                   >
                     <span className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs font-bold text-white bg-gradient-to-br from-emerald-600 to-green-700 ring-2 ring-white dark:ring-slate-900">
-                      AR
+                     <div className="avatar">
+  <div className="ring-primary ring-offset-base-100 w-10 rounded-full ring-2 ring-offset-2">
+    <img  src={user?.image}/>
+  </div>
+</div>
                     </span>
                     <ChevronDown
                       size={14}
@@ -225,8 +220,8 @@ console.log("session data in Navbar:" , session , "Is pending:" , isPending
                   {profileOpen && (
                     <div className="absolute right-0 mt-2.5 w-60 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/40 border border-slate-100 dark:border-white/10 animate-[fadeIn_0.15s_ease-out]">
                       <div className="px-4 py-3.5 bg-gradient-to-br from-emerald-50 to-green-50/50 dark:from-emerald-500/10 dark:to-green-500/5 border-b border-slate-100 dark:border-white/10">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">Amina Rahman</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">amina@email.com</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{user?.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
                       </div>
                       <div className="py-1.5">
                         {[
@@ -259,7 +254,26 @@ console.log("session data in Navbar:" , session , "Is pending:" , isPending
                     </div>
                   )}
                 </div>
+                </> :
+                <>
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link
+                    href="/sign-in"
+                    className="text-sm font-medium px-4 py-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+                </>
 
+               
+}
                 {/* Mobile menu toggle — below md */}
                 <button
                   className="md:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-200"
