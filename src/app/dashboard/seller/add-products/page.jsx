@@ -2,7 +2,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { AddProductForm } from '@/components/dashboard/sellerAddProducts';
-import { createProduct } from '@/lib/actions/products'; // ← adjust to wherever your server action file actually lives
+import { createProduct } from '@/lib/actions/addproducts'; // ← adjust to wherever your server action file actually lives
 
 const AddProductsPage = () => {
  

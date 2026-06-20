@@ -2,8 +2,9 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CopyPicture, TrashBin } from "@gravity-ui/icons";
-import { createProduct } from "@/lib/actions/products";
+import { createProduct } from "@/lib/actions/addproducts";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation"; // Changed from redirect to useRouter
 
 // TODO: replace with real category fetch from backend
 const CATEGORY_OPTIONS = [
@@ -29,8 +30,7 @@ const initialFormState = {
 };
 
 export function AddProductForm() {
-
-
+  const router = useRouter(); // Initialize router hook
   const [formData, setFormData] = useState(initialFormState);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -39,11 +39,13 @@ export function AddProductForm() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-   async function handleAddProduct(productData) {
+  async function handleAddProduct(productData) {
     const result = await createProduct(productData);
     console.log("Created in MongoDB:", result);
     toast.success("Product added successfully!");
+    router.push("/dashboard/seller"); // Redirecting to seller dashboard
   }
+  
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -118,10 +120,11 @@ export function AddProductForm() {
 
       if (handleAddProduct) {
         await handleAddProduct(productData);
+        
       } else {
         // Fallback fake submit if no onSubmit is passed
         await new Promise((res) => setTimeout(res, 900));
-        console.log("Fake submit — product payload:", productData);
+        console.log(productData);
       }
 
       setFormData(initialFormState);
@@ -351,6 +354,7 @@ function Field({ label, error, children }) {
   );
 }
 
+// Helpers for Tailwind Classnames
 function inputClass(hasError) {
   return `w-full rounded-[10px] border bg-white px-3.5 py-2.5 text-sm text-[#1f2d22] outline-none transition-colors focus:border-[#2c6b4f] ${
     hasError ? "border-[#e0a3a3]" : "border-[#d8e0cf]"
