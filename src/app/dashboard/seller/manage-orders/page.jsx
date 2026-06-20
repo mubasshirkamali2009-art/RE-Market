@@ -1,10 +1,10 @@
-import { ProductsTable } from '@/components/MyProducts';
+import { OrdersTable } from "@/components/ManageOrders";
 import React from 'react';
 
 const MyProductsPage= () => {
     return (
         <div>
-            <ProductsTable></ProductsTable>
+            <OrdersTable></OrdersTable>
         </div>
     );
 };
