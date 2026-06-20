@@ -3,12 +3,16 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client"; // adjust to your actual auth-client path
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+
 export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
   const [formData, setFormData] = useState({
     name: "",
     photoUrl: "",
     email: "",
     password: "",
+    role:"",
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +33,8 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
       image: formData.photoUrl,
       email: formData.email,
       password: formData.password,
-      callbackURL: "/",
+      role:formData.role,
+      callbackURL: "/sign-in",
     });
 
     toast.dismiss(loadingToast);
@@ -43,6 +48,7 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
 
     toast.success("Account created!");
     onSignUpSuccess?.(data);
+    redirect("/sign-in")
   }
 
   function handleGoogleClick() {
@@ -170,6 +176,9 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
               />
             </div>
 
+
+
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-[#33402f]" htmlFor="password">
                 Password
@@ -184,7 +193,45 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
                 onChange={handleChange}
               />
             </div>
+<div className="space-y-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[#33402f]" htmlFor="role">
+                Role
+              </label>
+              <div className="flex gap-2 text-sm font-bold  ">
+                <input type="radio"   className="rounded-[10px] border radio-sm radio radio-success "
+                id="admin"
+                name="role"
+               value={"admin"}
+                
+                
+              
+                onChange={handleChange} defaultChecked />
+                <label htmlFor="admin"> Admin</label>
+              </div>
+              <div className="flex gap-2 text-sm font-bold ">
+                <input type="radio"   className=" rounded-[10px] radio-sm border radio radio-success "
+                id="seller"
+                name="role"
+              
+                   value={"seller"}
+                
+                
+                onChange={handleChange} defaultChecked />
+                 <label htmlFor="seller"> Seller</label>
 
+              </div>
+             <div className="flex gap-2 text-sm font-bold ">
+               <input type="radio" selected  className=" rounded-[10px]  radio-sm border radio radio-success "
+                id="buyer"
+                name="role"
+              
+                value={"buyer"}
+                
+                onChange={handleChange} defaultChecked />
+                 <label htmlFor="buyer"> Buyer</label>
+             </div>
+
+            </div>
             {error && (
               <p className="rounded-lg bg-[#fbeaea] px-3 py-2 text-[13px] text-[#a13a3a]">
                 {error}

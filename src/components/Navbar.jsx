@@ -82,6 +82,7 @@ const user =  session?.user;
   const handleLogout = async () => {
       setProfileOpen(false)
       await authClient.signOut()
+      window.location.reload()
   }
 
   return (
@@ -322,8 +323,26 @@ const user =  session?.user;
               })}
 
               {/* Login / Register — hardcoded, always visible in mobile menu too, navigates on click */}
-              <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-white/10">
-                <Link
+              
+               { user ? <>
+               
+               
+               <div className="w-full">
+                <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-lg  
+                          
+                          flex justify-center
+                          
+                          font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
+                        >
+                          <LogOut size={16} />
+                          Log out
+                        </button>
+               </div>
+               </>  : 
+               <> <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-white/10"> 
+               <Link
                   href="/sign-in"
                   onClick={() => setMobileOpen(false)}
                   className="flex-1 text-center text-sm font-medium px-4 py-3 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200"
@@ -336,8 +355,8 @@ const user =  session?.user;
                   className="flex-1 text-center text-sm font-semibold px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm"
                 >
                   Sign up
-                </Link>
-              </div>
+                </Link>  </div> </>}
+             
             </div>
           </div>
         </nav>
