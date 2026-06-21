@@ -1,18 +1,16 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Heart, ShoppingCart, Search, LayoutGrid, List, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 // =====================================================
-// CONFIG — swap these when you wire up real auth/API
+// CONFIG
 // =====================================================
 const API_BASE = "http://localhost:5000"; // change to your live API URL
-const CURRENT_USER_EMAIL = "rakib@example.com"; // TODO: replace with real auth (Firebase user.email etc.)
 
-// These now match AddProductForm's actual CATEGORY_OPTIONS / CONDITION_OPTIONS
-// exactly. If you add/remove options there, mirror the change here too —
-// otherwise products saved under a new option silently stop matching any
-// filter checkbox, which was the original bug.
 const CATEGORIES = [
   "Phones",
   "Laptops",
@@ -49,6 +47,10 @@ function timeAgo(dateString) {
 // Main Component
 // =====================================================
 export default function ProductsPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const userEmail = session?.user?.email || null;
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -92,10 +94,16 @@ export default function ProductsPage() {
   // Fetch user's existing wishlist so hearts render correctly on load
   // -----------------------------------------------------
   useEffect(() => {
+    if (!userEmail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing local UI state on logout, not an external sync
+      setWishlistIds(new Set());
+      return;
+    }
+
     async function fetchWishlist() {
       try {
         const res = await fetch(
-          `${API_BASE}/api/wishlist?email=${encodeURIComponent(CURRENT_USER_EMAIL)}`
+          `${API_BASE}/api/wishlist?email=${encodeURIComponent(userEmail)}`
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -105,12 +113,45 @@ export default function ProductsPage() {
       }
     }
     fetchWishlist();
-  }, []);
+  }, [userEmail]);
+
+  // -----------------------------------------------------
+  // Fetch user's existing cart so "Added" state renders correctly on
+  // load — this is what makes a product already-carded on this page
+  // also show as carded on the product detail page, and vice versa.
+  // -----------------------------------------------------
+  useEffect(() => {
+    if (!userEmail) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing local UI state on logout, not an external sync
+      setCartIds(new Set());
+      return;
+    }
+
+    async function fetchCart() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/cart?email=${encodeURIComponent(userEmail)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setCartIds(new Set(data.map((p) => p._id)));
+      } catch (err) {
+        console.error("Couldn't load cart", err);
+      }
+    }
+    fetchCart();
+  }, [userEmail]);
 
   // -----------------------------------------------------
   // Wishlist toggle — click heart ON adds, click again removes
   // -----------------------------------------------------
   async function toggleWishlist(product) {
+    if (!userEmail) {
+      toast.error("Please login to use wishlist");
+      router.push("/sign-in");
+      return;
+    }
+
     const productId = product._id;
     const isWishlisted = wishlistIds.has(productId);
 
@@ -126,13 +167,13 @@ export default function ProductsPage() {
         await fetch(`${API_BASE}/api/wishlist`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail: CURRENT_USER_EMAIL, productId }),
+          body: JSON.stringify({ userEmail, productId }),
         });
       } else {
         await fetch(`${API_BASE}/api/wishlist`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail: CURRENT_USER_EMAIL, productId }),
+          body: JSON.stringify({ userEmail, productId }),
         });
       }
     } catch (err) {
@@ -147,14 +188,51 @@ export default function ProductsPage() {
   }
 
   // -----------------------------------------------------
-  // Cart toggle — local only for now (swap for real cart API later)
+  // Cart toggle — saved to backend, same pattern as wishlist.
+  // Not logged in -> toast + redirect to /sign-in, nothing is saved.
   // -----------------------------------------------------
-  function toggleCart(product) {
+  async function toggleCart(product) {
+    if (!userEmail) {
+      toast.error("Please login to add items to your cart");
+      router.push("/sign-in");
+      return;
+    }
+
+    const productId = product._id;
+    const isInCart = cartIds.has(productId);
+
+    // optimistic UI update
     setCartIds((prev) => {
       const next = new Set(prev);
-      next.has(product._id) ? next.delete(product._id) : next.add(product._id);
+      isInCart ? next.delete(productId) : next.add(productId);
       return next;
     });
+
+    try {
+      if (isInCart) {
+        await fetch(`${API_BASE}/api/cart`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userEmail, productId }),
+        });
+      } else {
+        await fetch(`${API_BASE}/api/cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userEmail, productId }),
+        });
+        toast.success("Added to cart");
+      }
+    } catch (err) {
+      console.error("Cart update failed", err);
+      toast.error("Couldn't update cart, please try again");
+      // revert optimistic update on failure
+      setCartIds((prev) => {
+        const next = new Set(prev);
+        isInCart ? next.add(productId) : next.delete(productId);
+        return next;
+      });
+    }
   }
 
   function toggleCategory(cat) {
@@ -187,9 +265,6 @@ export default function ProductsPage() {
 
   // -----------------------------------------------------
   // Filter + sort (client-side)
-  // FIXED: was filtering/searching on p.title, but AddProductForm saves
-  // products with a `name` field, not `title`. Same for category/condition
-  // value lists below, which now mirror AddProductForm's real options.
   // -----------------------------------------------------
   const filteredProducts = useMemo(() => {
     let list = [...products];
@@ -496,11 +571,6 @@ function FilterCheckbox({ label, checked, onChange }) {
 
 /**
  * Auto-advancing image slider for product cards.
- * - Cycles through `images` automatically every SLIDE_INTERVAL_MS.
- * - If the user manually clicks a dot or arrow, auto-advance pauses for
- *   one full interval, then resumes — so it doesn't fight the user's
- *   manual browsing but still "catches up" if they leave it alone.
- * - Falls back to a single static image if there's only one (or zero).
  */
 function ImageSlider({ images = [], alt }) {
   const safeImages = images.length > 0 ? images : ["/placeholder-product.png"];
@@ -509,7 +579,7 @@ function ImageSlider({ images = [], alt }) {
   const pausedRef = useRef(false);
 
   useEffect(() => {
-    if (safeImages.length <= 1) return; // nothing to cycle
+    if (safeImages.length <= 1) return;
 
     function tick() {
       if (!pausedRef.current) {
@@ -524,7 +594,6 @@ function ImageSlider({ images = [], alt }) {
 
   function goTo(i) {
     setIndex(i);
-    // pause auto-advance briefly after manual interaction, then resume
     pausedRef.current = true;
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
@@ -541,7 +610,6 @@ function ImageSlider({ images = [], alt }) {
       />
       {safeImages.length > 1 && (
         <>
-          {/* dots */}
           <div className="absolute bottom-1.5 left-0 right-0 flex justify-center gap-1">
             {safeImages.map((_, i) => (
               <button
@@ -558,7 +626,6 @@ function ImageSlider({ images = [], alt }) {
               />
             ))}
           </div>
-          {/* prev/next arrows, shown on hover */}
           <button
             onClick={(e) => {
               e.preventDefault();

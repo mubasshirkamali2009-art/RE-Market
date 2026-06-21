@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +23,10 @@ import { useSession } from "@/lib/auth-client";
 // CONFIG
 // =====================================================
 const API_BASE = "http://localhost:5000";
-const CURRENT_USER_EMAIL = "rakib@example.com"; // TODO: replace with real auth (same as ProductsPage)
+// FIXED: no more hardcoded CURRENT_USER_EMAIL. Every wishlist/cart call below
+// now uses the real logged-in user's email from the session, the same way
+// ProductsPage.jsx already does. This is what was causing one user's
+// wishlist/cart actions to bleed into another user's data.
 
 // =====================================================
 // Helpers
@@ -71,12 +74,34 @@ const staggerContainer = {
 };
 
 // =====================================================
+// Hydration-safe "are we on the client yet" hook.
+// useSyncExternalStore is the React-recommended way to do this —
+// no setState call inside an effect, so it doesn't trigger the
+// react-hooks/set-state-in-effect lint rule, and it still guarantees
+// the server render and the first client paint match (both "false"),
+// only flipping to "true" after hydration is done.
+// =====================================================
+function subscribeNoop() {
+  return () => {};
+}
+function getClientSnapshot() {
+  return true;
+}
+function getServerSnapshot() {
+  return false;
+}
+function useMounted() {
+  return useSyncExternalStore(subscribeNoop, getClientSnapshot, getServerSnapshot);
+}
+
+// =====================================================
 // Main Page — PRIVATE: redirects to /sign-in if no session
 // =====================================================
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const userEmail = session?.user?.email || null; // FIXED: real user, not a hardcoded constant
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,19 +111,30 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
 
   // -----------------------------------------------------
+  // HYDRATION FIX: useSession() can resolve differently between the
+  // server render and the very first client render (it reads client-only
+  // state like cookies/localStorage), which made React see two different
+  // trees and regenerate the whole page on the client — wiping in-flight
+  // effects like the wishlist/cart checks. `mounted` guarantees the server
+  // HTML and the first client paint are identical (always the skeleton);
+  // real content only swaps in after hydration has safely finished.
+  // -----------------------------------------------------
+  const mounted = useMounted();
+
+  // -----------------------------------------------------
   // Auth guard — push to /sign-in once we know there's no session
   // -----------------------------------------------------
   useEffect(() => {
-    if (!isPending && !session) {
+    if (mounted && !isPending && !session) {
       router.push("/sign-in");
     }
-  }, [isPending, session, router]);
+  }, [mounted, isPending, session, router]);
 
   // -----------------------------------------------------
   // Fetch product by id
   // -----------------------------------------------------
   useEffect(() => {
-    if (!id || isPending || !session) return;
+    if (!mounted || !id || isPending || !session) return;
 
     async function fetchProduct() {
       setLoading(true);
@@ -116,20 +152,19 @@ export default function ProductDetailPage() {
       }
     }
     fetchProduct();
-  }, [id, isPending, session]);
+  }, [mounted, id, isPending, session]);
 
   // -----------------------------------------------------
-  // Check wishlist status for this product + current user
-  // (uses CURRENT_USER_EMAIL — same pattern as ProductsPage)
+  // Check wishlist status for this product + the REAL current user
   // -----------------------------------------------------
   useEffect(() => {
-    if (!id) return;
+    if (!mounted || !id || !userEmail) return;
 
     async function checkWishlist() {
       try {
         const res = await fetch(
           `${API_BASE}/api/wishlist/check?email=${encodeURIComponent(
-            CURRENT_USER_EMAIL
+            userEmail
           )}&productId=${id}`
         );
         if (!res.ok) return;
@@ -140,14 +175,13 @@ export default function ProductDetailPage() {
       }
     }
     checkWishlist();
-  }, [id]);
+  }, [mounted, id, userEmail]);
 
   // -----------------------------------------------------
   // Wishlist toggle — click heart ON adds, click again removes
-  // (uses CURRENT_USER_EMAIL — same pattern as ProductsPage)
   // -----------------------------------------------------
   async function toggleWishlist() {
-    if (!product) return;
+    if (!product || !userEmail) return;
     const productId = product._id;
     const isWishlisted = wishlisted;
 
@@ -159,13 +193,13 @@ export default function ProductDetailPage() {
         await fetch(`${API_BASE}/api/wishlist`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail: CURRENT_USER_EMAIL, productId }),
+          body: JSON.stringify({ userEmail, productId }),
         });
       } else {
         await fetch(`${API_BASE}/api/wishlist`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail: CURRENT_USER_EMAIL, productId }),
+          body: JSON.stringify({ userEmail, productId }),
         });
       }
     } catch (err) {
@@ -175,17 +209,70 @@ export default function ProductDetailPage() {
     }
   }
 
-  function toggleCart() {
-    setInCart((prev) => !prev);
+  // -----------------------------------------------------
+  // Check cart status for this product + the REAL current user
+  // -----------------------------------------------------
+  useEffect(() => {
+    if (!mounted || !id || !userEmail) return;
+
+    async function checkCart() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/cart/check?email=${encodeURIComponent(
+            userEmail
+          )}&productId=${id}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setInCart(!!data.inCart);
+      } catch (err) {
+        console.error("Couldn't check cart status", err);
+      }
+    }
+    checkCart();
+  }, [mounted, id, userEmail]);
+
+  // -----------------------------------------------------
+  // Cart toggle — saved to backend (same pattern as ProductsPage).
+  // This page is already private/auth-guarded above, so no
+  // login-required toast is needed here.
+  // -----------------------------------------------------
+  async function toggleCart() {
+    if (!product || !userEmail) return;
+    const productId = product._id;
+    const isInCart = inCart;
+
+    // optimistic UI update
+    setInCart(!isInCart);
+
+    try {
+      if (isInCart) {
+        await fetch(`${API_BASE}/api/cart`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userEmail, productId }),
+        });
+      } else {
+        await fetch(`${API_BASE}/api/cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userEmail, productId }),
+        });
+      }
+    } catch (err) {
+      console.error("Cart update failed", err);
+      // revert optimistic update on failure
+      setInCart(isInCart);
+    }
   }
 
   // -----------------------------------------------------
   // Render states
   // -----------------------------------------------------
-  if (isPending || (!session && !isPending)) {
+  if (!mounted || isPending || (!session && !isPending)) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <DetailSkeleton />
         </div>
       </div>

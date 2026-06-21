@@ -1,14 +1,20 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ShoppingCart, Trash2, ArrowLeft } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 // =====================================================
-// CONFIG — same pattern as ProductsPage, swap when real auth wired up
+// CONFIG
 // =====================================================
 const API_BASE = "http://localhost:5000";
-const CURRENT_USER_EMAIL = "rakib@example.com"; // TODO: replace with real auth (Firebase user.email etc.)
+// FIXED: no more hardcoded CURRENT_USER_EMAIL. This page now reads the
+// real logged-in user's email from the session — same as ProductsPage,
+// ProductDetailPage, and CartPage. The hardcoded constant was why every
+// wishlist add/remove/fetch was always scoped to "rakib@example.com"
+// regardless of who was actually signed in.
 
 // =====================================================
 // Helpers
@@ -50,41 +56,79 @@ const cardVariants = {
 };
 
 // =====================================================
-// Main Page
+// Hydration-safe "are we on the client yet" hook — same approach used
+// in ProductDetailPage. useSyncExternalStore avoids the
+// react-hooks/set-state-in-effect lint warning and guarantees the
+// server render and the first client paint match.
+// =====================================================
+function subscribeNoop() {
+  return () => {};
+}
+function getClientSnapshot() {
+  return true;
+}
+function getServerSnapshot() {
+  return false;
+}
+function useMounted() {
+  return useSyncExternalStore(subscribeNoop, getClientSnapshot, getServerSnapshot);
+}
+
+// =====================================================
+// Main Page — PRIVATE: redirects to /sign-in if no session
 // =====================================================
 export default function WishlistPage() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const userEmail = session?.user?.email || null; // FIXED: real user, not a hardcoded constant
+  const mounted = useMounted();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [removingIds, setRemovingIds] = useState(new Set());
 
-  async function fetchWishlist() {
-    setLoading(true);
-    setErrorMsg("");
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/wishlist?email=${encodeURIComponent(CURRENT_USER_EMAIL)}`
-      );
-      if (!res.ok) throw new Error("Failed to fetch wishlist");
-      const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Couldn't load your wishlist. Check that your API is running.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // -----------------------------------------------------
+  // Auth guard — push to /sign-in once we know there's no session
+  // -----------------------------------------------------
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard data-fetch-on-mount pattern, state updates happen after the async fetch resolves, not synchronously
+    if (mounted && !isPending && !session) {
+      router.push("/sign-in");
+    }
+  }, [mounted, isPending, session, router]);
+
+  // -----------------------------------------------------
+  // Fetch wishlist for the REAL current user, only once the session
+  // has actually resolved on the client.
+  // -----------------------------------------------------
+  useEffect(() => {
+    if (!mounted || isPending || !userEmail) return;
+
+    async function fetchWishlist() {
+      setLoading(true);
+      setErrorMsg("");
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/wishlist?email=${encodeURIComponent(userEmail)}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch wishlist");
+        const data = await res.json();
+        setItems(data);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg("Couldn't load your wishlist. Check that your API is running.");
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchWishlist();
-  }, []);
+  }, [mounted, isPending, userEmail]);
 
   // -----------------------------------------------------
   // Remove item — optimistic, with a short fade/slide-out first
   // -----------------------------------------------------
   async function handleRemove(product) {
+    if (!userEmail) return;
     const productId = product._id;
 
     setRemovingIds((prev) => new Set(prev).add(productId));
@@ -103,14 +147,27 @@ export default function WishlistPage() {
       await fetch(`${API_BASE}/api/wishlist`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userEmail: CURRENT_USER_EMAIL, productId }),
+        body: JSON.stringify({ userEmail, productId }),
       });
     } catch (err) {
       console.error("Failed to remove from wishlist", err);
       // re-fetch on failure so UI stays consistent with server
-      fetchWishlist();
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/wishlist?email=${encodeURIComponent(userEmail)}`
+        );
+        if (res.ok) setItems(await res.json());
+      } finally {
+        setLoading(false);
+      }
     }
   }
+
+  // While we don't yet know who's logged in (server render, or session
+  // still resolving on the client), always show the loading skeleton so
+  // the server HTML and the first client paint match exactly.
+  const showLoading = !mounted || isPending || loading;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,7 +194,7 @@ export default function WishlistPage() {
         </div>
 
         {/* Loading skeleton */}
-        {loading && (
+        {showLoading && (
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
@@ -149,14 +206,14 @@ export default function WishlistPage() {
         )}
 
         {/* Error state */}
-        {!loading && errorMsg && (
+        {!showLoading && errorMsg && (
           <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-10 text-center text-gray-500">
             {errorMsg}
           </div>
         )}
 
         {/* Empty state */}
-        {!loading && !errorMsg && items.length === 0 && (
+        {!showLoading && !errorMsg && items.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,7 +234,7 @@ export default function WishlistPage() {
         )}
 
         {/* Grid */}
-        {!loading && !errorMsg && items.length > 0 && (
+        {!showLoading && !errorMsg && items.length > 0 && (
           <motion.div
             variants={containerVariants}
             initial="hidden"
