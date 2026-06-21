@@ -6,6 +6,7 @@ import { CopyPicture, TrashBin } from "@gravity-ui/icons";
 import { createProduct } from "@/lib/actions/addproducts";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 
 // Category options
 const CATEGORY_OPTIONS = [
@@ -28,15 +29,18 @@ const initialFormState = {
   condition: "",
   price: "",
   stock: "",
-  nmae: "",
-  image: ""
 };
+
+const MAX_IMAGES = 5;
 
 export function AddProductForm() {
   const router = useRouter();
+  const { data: session, isPending: isSessionLoading } = useSession();
+  const user = session?.user;
+
   const [formData, setFormData] = useState(initialFormState);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]); // multiple images now
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -48,7 +52,7 @@ export function AddProductForm() {
     toast.success("Product added successfully!");
     router.push("/dashboard/seller");
   }
-  
+
   function handleChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -57,35 +61,60 @@ export function AddProductForm() {
     }
   }
 
-  function handleFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setErrors((prev) => ({ ...prev, image: "Please upload an image file." }));
+  function handleFiles(files) {
+    if (!files || files.length === 0) return;
+
+    const incoming = Array.from(files);
+    const room = MAX_IMAGES - imageFiles.length;
+
+    if (room <= 0) {
+      setErrors((prev) => ({
+        ...prev,
+        image: `You can upload up to ${MAX_IMAGES} images.`,
+      }));
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, image: "Image must be under 5MB." }));
-      return;
+
+    const accepted = [];
+    let errorMsg = "";
+
+    for (const file of incoming.slice(0, room)) {
+      if (!file.type.startsWith("image/")) {
+        errorMsg = "Please upload image files only.";
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        errorMsg = "Each image must be under 5MB.";
+        continue;
+      }
+      accepted.push(file);
     }
-    setErrors((prev) => ({ ...prev, image: undefined }));
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+
+    if (accepted.length > 0) {
+      setImageFiles((prev) => [...prev, ...accepted]);
+      setImagePreviews((prev) => [
+        ...prev,
+        ...accepted.map((f) => URL.createObjectURL(f)),
+      ]);
+    }
+
+    setErrors((prev) => ({ ...prev, image: errorMsg || undefined }));
   }
 
   function handleFileInputChange(e) {
-    handleFile(e.target.files?.[0]);
+    handleFiles(e.target.files);
+    e.target.value = ""; // allow re-selecting the same file later
   }
 
   function handleDrop(e) {
     e.preventDefault();
     setIsDragging(false);
-    handleFile(e.dataTransfer.files?.[0]);
+    handleFiles(e.dataTransfer.files);
   }
 
-  function removeImage() {
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  function removeImageAt(index) {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   }
 
   function validate() {
@@ -98,9 +127,28 @@ export function AddProductForm() {
       next.price = "Enter a valid price.";
     if (formData.stock === "" || Number(formData.stock) < 0)
       next.stock = "Enter a valid stock quantity.";
-    if (!imageFile) next.image = "Product image is required.";
+    if (imageFiles.length === 0) next.image = "At least one product image is required.";
+    if (!user) next.form = "You must be logged in to add a product.";
     setErrors(next);
     return Object.keys(next).length === 0;
+  }
+
+  async function uploadImageToImgBB(file, apiKey) {
+    const imgFormData = new FormData();
+    imgFormData.append("image", file);
+    const imgBBUrl = `https://api.imgbb.com/1/upload?key=${apiKey}`;
+
+    const uploadResponse = await fetch(imgBBUrl, {
+      method: "POST",
+      body: imgFormData,
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("Failed to upload one or more images to ImgBB.");
+    }
+
+    const uploadResult = await uploadResponse.json();
+    return uploadResult.data.url;
   }
 
   async function handleSubmit(e) {
@@ -109,42 +157,37 @@ export function AddProductForm() {
 
     setIsSubmitting(true);
     try {
-      // 1. Prepare Form Data for ImgBB payload
-      const imgFormData = new FormData();
-      imgFormData.append("image", imageFile);
-
-      // Extract raw key string from your env file
       const apiKey = process.env.NEXT_PUBLIC_IMSGE_UPLODE_API_URL;
       if (!apiKey) {
         throw new Error("ImgBB API key is missing from environmental variables.");
       }
 
-      // Concatenate standard base URL setup inside the component
-      const imgBBUrl = `https://api.imgbb.com/1/upload?key=${apiKey}`;
+      // 1. Upload all images to ImgBB in parallel
+      const uploadedImageUrls = await Promise.all(
+        imageFiles.map((file) => uploadImageToImgBB(file, apiKey))
+      );
 
-      // 2. Upload file directly to ImgBB
-      const uploadResponse = await fetch(imgBBUrl, {
-        method: "POST",
-        body: imgFormData,
-      });
+      // 2. Build sellerInfo straight from the user object — same plain
+      //    style your Navbar already uses (user?.name, user?.email, user?.image).
+      const sellerInfo = {
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        image: user.image,
+      };
 
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload image to ImgBB.");
-      }
-
-      const uploadResult = await uploadResponse.json();
-      const uploadedImageUrl = uploadResult.data.url; // Hosted CDN Image Link
-
-      // 3. Map final clean database attributes
+      // 3. Map final clean database attributes to match the target schema
       const productData = {
         name: formData.title,
-        title: formData.title,
-        description: formData.description,
         category: formData.category,
         condition: formData.condition,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        image: uploadedImageUrl, 
+        images: uploadedImageUrls,
+        description: formData.description,
+        sellerInfo,
+        status: "available",
       };
 
       if (handleAddProduct) {
@@ -156,7 +199,9 @@ export function AddProductForm() {
       }
 
       setFormData(initialFormState);
-      removeImage();
+      setImageFiles([]);
+      setImagePreviews([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
@@ -194,29 +239,38 @@ export function AddProductForm() {
             }`}
           >
             <AnimatePresence mode="wait">
-              {imagePreview ? (
+              {imagePreviews.length > 0 ? (
                 <motion.div
                   key="preview"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="relative h-full w-full"
+                  className="grid h-full w-full grid-cols-3 gap-2 overflow-y-auto p-1"
                 >
-                  <img
-                    src={imagePreview}
-                    alt="Product preview"
-                    className="h-full w-full rounded-lg object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      removeImage();
-                    }}
-                    className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-                  >
-                    <TrashBin className="size-3.5" />
-                  </button>
+                  {imagePreviews.map((src, i) => (
+                    <div key={src} className="relative aspect-square">
+                      <img
+                        src={src}
+                        alt={`Product preview ${i + 1}`}
+                        className="h-full w-full rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          removeImageAt(i);
+                        }}
+                        className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+                      >
+                        <TrashBin className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {imagePreviews.length < MAX_IMAGES && (
+                    <div className="flex aspect-square items-center justify-center rounded-lg border border-dashed border-[#c9d6bd] text-xs text-[#7a8a78]">
+                      + Add more
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -230,12 +284,14 @@ export function AddProductForm() {
                     <CopyPicture className="size-5" />
                   </span>
                   <p className="text-sm font-semibold text-[#2c6b4f]">
-                    Upload Product Image
+                    Upload Product Images
                   </p>
                   <p className="text-xs text-[#7a8a78]">
-                    Click or drag an image here
+                    Click or drag images here
                   </p>
-                  <p className="text-xs text-[#9aa896]">PNG, JPG up to 5MB</p>
+                  <p className="text-xs text-[#9aa896]">
+                    PNG, JPG up to 5MB each, max {MAX_IMAGES}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -245,6 +301,7 @@ export function AddProductForm() {
             id="product-image"
             type="file"
             accept="image/png, image/jpeg"
+            multiple
             onChange={handleFileInputChange}
             className="hidden"
           />
@@ -346,7 +403,7 @@ export function AddProductForm() {
 
           <motion.button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSessionLoading}
             whileHover={{ scale: isSubmitting ? 1 : 1.01 }}
             whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
             className="mt-1 w-full rounded-xl bg-[#2c6b4f] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1f4d3c] disabled:cursor-not-allowed disabled:opacity-70 sm:hidden lg:block"
@@ -358,7 +415,7 @@ export function AddProductForm() {
         {/* Full-width submit on mobile/tablet */}
         <motion.button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSessionLoading}
           whileHover={{ scale: isSubmitting ? 1 : 1.01 }}
           whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
           className="hidden w-full rounded-xl bg-[#2c6b4f] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1f4d3c] disabled:cursor-not-allowed disabled:opacity-70 sm:block lg:hidden"
