@@ -55,6 +55,8 @@ const initialFormState = {
   price: "",
 
   stock: "",
+  nmae:"",
+  image:""
 
 };
 
@@ -215,6 +217,8 @@ export function AddProductForm() {
     try {
 
       const productData = {
+          image: imageFile,
+       name: formData.title,
 
         title: formData.title,
 
@@ -241,7 +245,7 @@ export function AddProductForm() {
       if (handleAddProduct) {
 
         await handleAddProduct(productData);
-
+console.log(productData)
        
 
       } else {
