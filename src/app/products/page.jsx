@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Heart, ShoppingCart, Search, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Heart, ShoppingCart, Search, LayoutGrid, List, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 
 // =====================================================
 // CONFIG — swap these when you wire up real auth/API
@@ -590,7 +591,9 @@ function ProductCard({ product, wishlisted, inCart, onToggleWishlist, onToggleCa
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col group">
       <div className="relative aspect-square bg-gray-50">
-        <ImageSlider images={product.images} alt={product.name} />
+        <Link href={`/products/${product._id}`}>
+          <ImageSlider images={product.images} alt={product.name} />
+        </Link>
         <button
           onClick={onToggleWishlist}
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
@@ -603,9 +606,11 @@ function ProductCard({ product, wishlisted, inCart, onToggleWishlist, onToggleCa
       </div>
       <div className="p-3 flex flex-col flex-1">
         <span className="text-xs font-medium text-green-600">{product.category}</span>
-        <h3 className="text-sm font-semibold text-gray-900 mt-0.5 line-clamp-1">
-          {product.name}
-        </h3>
+        <Link href={`/products/${product._id}`}>
+          <h3 className="text-sm font-semibold text-gray-900 mt-0.5 line-clamp-1 hover:text-green-700 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</span>
           {product.originalPrice && (
@@ -618,17 +623,28 @@ function ProductCard({ product, wishlisted, inCart, onToggleWishlist, onToggleCa
           <span className="truncate">📍 {product.locationLabel || "Location not set"}</span>
           <span className="flex-shrink-0 ml-2">{timeAgo(product.createdAt)}</span>
         </div>
-        <button
-          onClick={onToggleCart}
-          className={`mt-3 w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 transition ${
-            inCart
-              ? "bg-green-600 text-white"
-              : "bg-green-50 text-green-700 hover:bg-green-100"
-          }`}
-        >
-          <ShoppingCart className="w-4 h-4" />
-          {inCart ? "Added to Cart" : "Add to Cart"}
-        </button>
+
+        <div className="mt-3 flex gap-2">
+          <Link
+            href={`/products/${product._id}`}
+            className="flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            Details
+          </Link>
+          <button
+            onClick={onToggleCart}
+            aria-label={inCart ? "Added to Cart" : "Add to Cart"}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 transition-colors ${
+              inCart
+                ? "bg-green-600 text-white"
+                : "bg-green-50 text-green-700 hover:bg-green-100"
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            {inCart ? "Added" : "Add"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -637,12 +653,16 @@ function ProductCard({ product, wishlisted, inCart, onToggleWishlist, onToggleCa
 function ProductRow({ product, wishlisted, inCart, onToggleWishlist, onToggleCart }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-4">
-      <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+      <Link href={`/products/${product._id}`} className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
         <ImageSlider images={product.images} alt={product.name} />
-      </div>
+      </Link>
       <div className="flex-1 min-w-0">
         <span className="text-xs font-medium text-green-600">{product.category}</span>
-        <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+        <Link href={`/products/${product._id}`}>
+          <h3 className="text-sm font-semibold text-gray-900 truncate hover:text-green-700 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</span>
           {product.originalPrice && (
@@ -656,6 +676,13 @@ function ProductRow({ product, wishlisted, inCart, onToggleWishlist, onToggleCar
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
+        <Link
+          href={`/products/${product._id}`}
+          aria-label="View product details"
+          className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50"
+        >
+          <Eye className="w-4 h-4 text-gray-500" />
+        </Link>
         <button
           onClick={onToggleWishlist}
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
