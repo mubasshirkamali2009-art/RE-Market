@@ -7,7 +7,7 @@ import { createProduct } from "@/lib/actions/addproducts";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-
+import { LocationSelect, formatLocation } from "@/components/Locetion";
 // Category options
 const CATEGORY_OPTIONS = [
   "Phones",
@@ -31,6 +31,12 @@ const initialFormState = {
   stock: "",
 };
 
+const initialLocationState = {
+  division: "",
+  district: "",
+  upazila: "",
+};
+
 const MAX_IMAGES = 5;
 
 export function AddProductForm() {
@@ -39,6 +45,7 @@ export function AddProductForm() {
   const user = session?.user;
 
   const [formData, setFormData] = useState(initialFormState);
+  const [location, setLocation] = useState(initialLocationState); // NEW
   const [imageFiles, setImageFiles] = useState([]); // multiple images now
   const [imagePreviews, setImagePreviews] = useState([]);
   const [errors, setErrors] = useState({});
@@ -128,6 +135,12 @@ export function AddProductForm() {
     if (formData.stock === "" || Number(formData.stock) < 0)
       next.stock = "Enter a valid stock quantity.";
     if (imageFiles.length === 0) next.image = "At least one product image is required.";
+
+    // NEW: location validation — division and district are required,
+    // upazila is optional since some districts may not need that level
+    if (!location.division) next.division = "Select a division.";
+    if (!location.district) next.district = "Select a district.";
+
     if (!user) next.form = "You must be logged in to add a product.";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -188,6 +201,14 @@ export function AddProductForm() {
         description: formData.description,
         sellerInfo,
         status: "available",
+        // NEW: structured location, plus a flat display string so the
+        // products listing page can show it without recombining parts
+        location: {
+          division: location.division,
+          district: location.district,
+          upazila: location.upazila || null,
+        },
+        locationLabel: formatLocation(location), // e.g. "Savar, Dhaka, Dhaka"
       };
 
       if (handleAddProduct) {
@@ -199,6 +220,7 @@ export function AddProductForm() {
       }
 
       setFormData(initialFormState);
+      setLocation(initialLocationState);
       setImageFiles([]);
       setImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -393,6 +415,14 @@ export function AddProductForm() {
                 className={inputClass(errors.stock)}
               />
             </Field>
+          </div>
+
+          {/* NEW: Division / District / Upazila cascading location picker */}
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-[#33402f]">
+              Location
+            </label>
+            <LocationSelect value={location} onChange={setLocation} errors={errors} />
           </div>
 
           {errors.form && (

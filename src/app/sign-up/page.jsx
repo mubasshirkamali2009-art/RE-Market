@@ -12,7 +12,8 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
     photoUrl: "",
     email: "",
     password: "",
-    role:"",
+    role: "buyer", // default selection — was "" before, which is why an
+                   // unchanged selection submitted as an empty string
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -193,44 +194,57 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
                 onChange={handleChange}
               />
             </div>
-<div className="space-y-2">
-              <label className="mb-1.5 block text-sm font-semibold text-[#33402f]" htmlFor="role">
+
+            {/*
+              Role radios — fixed to be a properly controlled group:
+              - removed `defaultChecked` from all three (you can't have
+                three "default checked" radios in one group and expect
+                React to track which is actually selected)
+              - added `checked={formData.role === "x"}` to each, so React
+                state is the single source of truth for which is selected
+              - this is what actually makes a controlled radio group work;
+                onChange alone without `checked` doesn't reliably stick
+            */}
+            <div className="space-y-2">
+              <label className="mb-1.5 block text-sm font-semibold text-[#33402f]">
                 Role
               </label>
-              <div className="flex gap-2 text-sm font-bold  ">
-                <input type="radio"   className="rounded-[10px] border radio-sm radio radio-success "
-                id="admin"
-                name="role"
-               value={"admin"}
-                
-                
-              
-                onChange={handleChange} defaultChecked />
+              <div className="flex gap-2 text-sm font-bold">
+                <input
+                  type="radio"
+                  className="rounded-[10px] border radio-sm radio radio-success"
+                  id="admin"
+                  name="role"
+                  value="admin"
+                  checked={formData.role === "admin"}
+                  onChange={handleChange}
+                />
                 <label htmlFor="admin"> Admin</label>
               </div>
-              <div className="flex gap-2 text-sm font-bold ">
-                <input type="radio"   className=" rounded-[10px] radio-sm border radio radio-success "
-                id="seller"
-                name="role"
-              
-                   value={"seller"}
-                
-                
-                onChange={handleChange} defaultChecked />
-                 <label htmlFor="seller"> Seller</label>
-
+              <div className="flex gap-2 text-sm font-bold">
+                <input
+                  type="radio"
+                  className="rounded-[10px] radio-sm border radio radio-success"
+                  id="seller"
+                  name="role"
+                  value="seller"
+                  checked={formData.role === "seller"}
+                  onChange={handleChange}
+                />
+                <label htmlFor="seller"> Seller</label>
               </div>
-             <div className="flex gap-2 text-sm font-bold ">
-               <input type="radio" selected  className=" rounded-[10px]  radio-sm border radio radio-success "
-                id="buyer"
-                name="role"
-              
-                value={"buyer"}
-                
-                onChange={handleChange} defaultChecked />
-                 <label htmlFor="buyer"> Buyer</label>
-             </div>
-
+              <div className="flex gap-2 text-sm font-bold">
+                <input
+                  type="radio"
+                  className="rounded-[10px] radio-sm border radio radio-success"
+                  id="buyer"
+                  name="role"
+                  value="buyer"
+                  checked={formData.role === "buyer"}
+                  onChange={handleChange}
+                />
+                <label htmlFor="buyer"> Buyer</label>
+              </div>
             </div>
             {error && (
               <p className="rounded-lg bg-[#fbeaea] px-3 py-2 text-[13px] text-[#a13a3a]">

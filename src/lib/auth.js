@@ -28,7 +28,9 @@ export const auth = betterAuth({
   user: {
     additionalFields:{
       role:{
-        default:"buyer"
+      type: "string",   // was missing — this is the actual bug
+  default: "buyer",
+  input: true,  
       }
     }
   }

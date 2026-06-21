@@ -62,11 +62,16 @@ const user =  session?.user;
   // URL (pathname) via usePathname — not local click state — so whichever
   // page you're actually on lights up automatically, even on direct load,
   // refresh, or back/forward navigation.
+
+  // Dashboard route is dynamic based on the logged-in user's role:
+  // /dashboard/buyer, /dashboard/seller, or /dashboard/admin.
+  const dashboardHref = user?.role ? `/dashboard/${user.role}` : "/dashboard";
+
   const navLinks = [
     { label: "Home", href: "/", icon: Home },
     { label: "Products", href: "/products", icon: Boxes },
     { label: "Categories", href: "/categories", icon: LayoutGrid },
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
   ];
 
   // "/" only matches exactly. Other routes match their own path and any
