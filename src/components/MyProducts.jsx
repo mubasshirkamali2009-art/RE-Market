@@ -1,7 +1,8 @@
 "use client";
+
 import { useState, useEffect } from "react"; 
 import { motion } from "framer-motion";
-import { Pencil, Eye, TrashBin } from "@gravity-ui/icons";
+import { Pencil, Eye, TrashBin, Box } from "@gravity-ui/icons"; 
 import { getProducts } from "@/lib/api/products"; 
 
 const statusStyles = {
@@ -10,15 +11,13 @@ const statusStyles = {
   "Out of Stock": "bg-[#fbeaea] text-[#c0392b]",
 };
 
-// Fallback image asset when no real product image exists
-const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=80&auto=format&fit=crop&q=60";
-
 /**
- * My Products table.
+ * My Products table component.
  */
 export function ProductsTable({
+  searchTerm = "",
   onEdit,
-  onView,
+  onViewDetails, // Renamed from onView to match your parent component prop!
   onDelete,
   viewAllHref = "#",
 }) {
@@ -29,7 +28,7 @@ export function ProductsTable({
     async function fetchProducts() {
       try {
         const data = await getProducts("", ""); 
-        setProducts(data);
+        setProducts(data || []);
       } catch (error) {
         console.error("Failed to load products:", error);
       } finally {
@@ -39,6 +38,14 @@ export function ProductsTable({
     fetchProducts();
   }, []);
 
+  // Real-time client side text search matching name or category
+  const filteredProducts = products.filter((product) => {
+    const name = (product.name || product.title || "").toLowerCase();
+    const category = (product.category || "").toLowerCase();
+    const query = searchTerm.toLowerCase();
+    return name.includes(query) || category.includes(query);
+  });
+console.log(products)
   return (
     <div className="rounded-2xl border border-[#e4e9dc] bg-white p-5 sm:p-6">
       <div className="flex items-center justify-between">
@@ -54,12 +61,12 @@ export function ProductsTable({
       )}
 
       {/* Empty State Feedback */}
-      {!loading && products.length === 0 && (
+      {!loading && filteredProducts.length === 0 && (
         <p className="mt-4 text-center text-sm text-[#7a8a78]">No products found.</p>
       )}
 
-      {/* Desktop table */}
-      {!loading && products.length > 0 && (
+      {/* Desktop table layout */}
+      {!loading && filteredProducts.length > 0 && (
         <div className="mt-4 hidden overflow-x-auto sm:block">
           <table className="w-full text-left text-sm">
             <thead>
@@ -73,87 +80,105 @@ export function ProductsTable({
               </tr>
             </thead>
             <tbody>
-              {products.map((product, i) => (
-                <motion.tr
-                  key={product._id || product.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.3 }}
-                  className="border-b border-[#f0f3ec] last:border-0"
-                >
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-3">
-                      {/* Design Change: Always uses an image tag structure now */}
-                      <img 
-                        src={product.image || PLACEHOLDER_IMAGE} 
-                        alt={product.name || product.title} 
-                        className="size-8 rounded-lg object-cover bg-[#eef3e2]" 
-                      />
-                      <span className="font-medium text-[#1f2d22]">{product.name || product.title}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4 text-[#5b6b58]">{product.category}</td>
-                  <td className="py-3 pr-4 font-medium text-[#1f2d22]">${product.price}</td>
-                  <td className="py-3 pr-4 text-[#5b6b58]">{product.stock}</td>
-                  <td className="py-3 pr-4">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[product.status] || statusStyles.Active}`}>
-                      {product.status || "Active"}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <RowAction icon={Pencil} label="Edit" onClick={() => onEdit?.(product._id || product.id)} />
-                      <RowAction icon={Eye} label="View" onClick={() => onView?.(product._id || product.id)} />
-                      <RowAction icon={TrashBin} label="Delete" tone="danger" onClick={() => onDelete?.(product._id || product.id)} />
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+              {filteredProducts.map((product, i) => {
+                const id = product._id || product.id;
+                return (
+                  <motion.tr
+                    key={id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, duration: 0.3 }}
+                    className="border-b border-[#f0f3ec] last:border-0"
+                  >
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-3">
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name || product.title} 
+                            className="size-8 rounded-lg object-cover bg-[#eef3e2]" 
+                          />
+                        ) : (
+                          <div className="flex size-8 items-center justify-center rounded-lg bg-[#eef3e2] text-[#2c6b4f]">
+                            <Box className="size-4" />
+                          </div>
+                        )}
+                        <span className="font-medium text-[#1f2d22]">{product.name || product.title}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4 text-[#5b6b58]">{product.category}</td>
+                    <td className="py-3 pr-4 font-medium text-[#1f2d22]">${product.price}</td>
+                    <td className="py-3 pr-4 text-[#5b6b58]">{product.stock}</td>
+                    <td className="py-3 pr-4">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[product.status] || statusStyles.Active}`}>
+                        {product.status || "Active"}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <RowAction icon={Pencil} label="Edit" onClick={() => onEdit?.(id)} />
+                        {/* Corrected handler execution hook */}
+                        <RowAction icon={Eye} label="View" onClick={() => onViewDetails?.(id)} />
+                        <RowAction icon={TrashBin} label="Delete" tone="danger" onClick={() => onDelete?.(id)} />
+                      </div>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Mobile cards */}
-      {!loading && products.length > 0 && (
+      {/* Mobile cards layout */}
+      {!loading && filteredProducts.length > 0 && (
         <div className="mt-4 grid gap-3 sm:hidden">
-          {products.map((product, i) => (
-            <motion.div
-              key={product._id || product.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.3 }}
-              className="rounded-xl border border-[#e4e9dc] p-3.5"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  {/* Design Change: Use image tag structure for mobile views */}
-                  <img 
-                    src={product.image || PLACEHOLDER_IMAGE} 
-                    alt={product.name || product.title} 
-                    className="size-8 rounded-lg object-cover bg-[#eef3e2]" 
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-[#1f2d22]">{product.name || product.title}</p>
-                    <p className="text-xs text-[#7a8a78]">{product.category}</p>
+          {filteredProducts.map((product, i) => {
+            const id = product._id || product.id;
+            return (
+              <motion.div
+                key={id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="rounded-xl border border-[#e4e9dc] p-3.5"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {product.image ? (
+                      <img 
+                        src={product.image} 
+                        alt={product.name || product.title} 
+                        className="size-8 rounded-lg object-cover bg-[#eef3e2]" 
+                      />
+                    ) : (
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-[#eef3e2] text-[#2c6b4f]">
+                        <Box className="size-4" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-[#1f2d22]">{product.name || product.title}</p>
+                      <p className="text-xs text-[#7a8a78]">{product.category}</p>
+                    </div>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[product.status] || statusStyles.Active}`}>
+                    {product.status || "Active"}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <p className="text-[#5b6b58]">
+                    <span className="font-medium text-[#1f2d22]">${product.price}</span> · {product.stock} in stock
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <RowAction icon={Pencil} label="Edit" onClick={() => onEdit?.(id)} />
+                    {/* Corrected handler execution hook */}
+                    <RowAction icon={Eye} label="View" onClick={() => onViewDetails?.(id)} />
+                    <RowAction icon={TrashBin} label="Delete" tone="danger" onClick={() => onDelete?.(id)} />
                   </div>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[product.status] || statusStyles.Active}`}>
-                  {product.status || "Active"}
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <p className="text-[#5b6b58]">
-                  <span className="font-medium text-[#1f2d22]">${product.price}</span> · {product.stock} in stock
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <RowAction icon={Pencil} label="Edit" onClick={() => onEdit?.(product._id || product.id)} />
-                  <RowAction icon={Eye} label="View" onClick={() => onView?.(product._id || product.id)} />
-                  <RowAction icon={TrashBin} label="Delete" tone="danger" onClick={() => onDelete?.(product._id || product.id)} />
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </div>

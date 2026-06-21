@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductsTable } from "@/components/MyProducts";
 import { ProductSearch } from "@/components/search";
 import { EditProductModal } from "@/components/Edit";
 import { DeleteProductDialog } from "@/components/Delete";
 
 export default function MyProductsPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [productToEdit, setProductToEdit] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -14,6 +16,11 @@ export default function MyProductsPage() {
   // Bumping this forces ProductsTable to refetch after an edit/delete,
   // since the table still fetches its own data internally.
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Navigates directly to the dynamic details view path
+  const handleViewDetails = (id) => {
+    router.push(`/dashboard/seller/my-products/${id}`);
+  };
 
   return (
     <div className="grid gap-5">
@@ -31,6 +38,7 @@ export default function MyProductsPage() {
         key={refreshKey}
         onEdit={(id) => setProductToEdit({ _id: id })}
         onDelete={(id) => setProductToDelete({ _id: id })}
+        onViewDetails={handleViewDetails} 
       />
 
       <EditProductModal
