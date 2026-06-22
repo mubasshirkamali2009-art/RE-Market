@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { Heart, ShoppingCart, Search, LayoutGrid, List, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
@@ -14,11 +14,55 @@ const API_BASE = "http://localhost:5000"; // change to your live API URL
 const CATEGORIES = [
   "Phones",
   "Laptops",
-  "Electronics",
+  "Tablets",
+  "Desktop Computers",
+  "TV & Monitors",
+  "Cameras",
+  "Audio & Headphones",
+  "Gaming Consoles",
+  "Smart Watches",
+  "Printers & Scanners",
+  "Networking Devices",
+  "Computer Parts",
+  // Fashion
+  "Men's Clothing",
+  "Women's Clothing",
+  "Kids' Clothing",
   "Footwear",
+  "Bags & Luggage",
+  "Watches",
+  "Jewelry",
   "Accessories",
+  // Home & Living
   "Furniture",
-  "Books",
+  "Home Appliances",
+  "Kitchen & Cookware",
+  "Bedding & Curtains",
+  "Home Décor",
+  "Tools & Hardware",
+  "Air Conditioners & Fans",
+  // Vehicles
+  "Cars",
+  "Motorcycles",
+  "Bicycles",
+  "Auto Parts & Accessories",
+  "CNG & Auto Rickshaws",
+  // Sports & Outdoors
+  "Sports Equipment",
+  "Fitness & Gym",
+  "Outdoor & Camping",
+  // Books, Hobbies & Kids
+  "Books & Magazines",
+  "Toys & Games",
+  "Baby & Kids Items",
+  "Musical Instruments",
+  "Art & Craft Supplies",
+  // Other
+  "Health & Beauty",
+  "Pet Supplies",
+  "Agriculture & Farm",
+  "Office Supplies",
+  "Other",
 ];
 
 const CONDITIONS = ["New", "Like New", "Good", "Fair", "Used"];
@@ -44,10 +88,36 @@ function timeAgo(dateString) {
 }
 
 // =====================================================
-// Main Component
+// Page wrapper — useSearchParams needs a Suspense boundary
 // =====================================================
 export default function ProductsPage() {
+  return (
+    <Suspense fallback={<ProductsPageSkeleton />}>
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
+
+function ProductsPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 h-64 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
+// Main Component
+// =====================================================
+function ProductsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const userEmail = session?.user?.email || null;
 
@@ -60,13 +130,29 @@ export default function ProductsPage() {
 
   // filters
   const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState(new Set());
+ const categoryParam = searchParams.get("category");
+
+const [selectedCategories, setSelectedCategories] = useState(() =>
+  categoryParam ? new Set([categoryParam]) : new Set()
+);
   const [selectedConditions, setSelectedConditions] = useState(new Set());
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(100000);
   const [sortBy, setSortBy] = useState("newest");
   const [view, setView] = useState("grid");
   const [page, setPage] = useState(1);
+
+  // -----------------------------------------------------
+  // Keep the category filter in sync with the URL.
+  // Covers both the initial load (coming from a category card)
+  // and clicking a different category while already on this page.
+  // -----------------------------------------------------
+const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+if (categoryParam !== prevCategoryParam) {
+  setPrevCategoryParam(categoryParam);
+  setSelectedCategories(categoryParam ? new Set([categoryParam]) : new Set());
+  setPage(1);
+}
 
   // -----------------------------------------------------
   // Fetch products
@@ -687,7 +773,7 @@ function ProductCard({ product, wishlisted, inCart, onToggleWishlist, onToggleCa
           )}
         </div>
         <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-          <span className="truncate">📍 {product.locationLabel || "Location not set"}</span>
+          <span className="truncate"> {product.locationLabel || "Location not set"}</span>
           <span className="flex-shrink-0 ml-2">{timeAgo(product.createdAt)}</span>
         </div>
 
@@ -739,7 +825,7 @@ function ProductRow({ product, wishlisted, inCart, onToggleWishlist, onToggleCar
           )}
         </div>
         <p className="text-xs text-gray-400 mt-1 truncate">
-          📍 {product.locationLabel || "Location not set"} · {timeAgo(product.createdAt)}
+           {product.locationLabel || "Location not set"} · {timeAgo(product.createdAt)}
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">

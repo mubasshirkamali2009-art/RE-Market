@@ -345,12 +345,21 @@ export default function ProductDetailPage() {
                     {product.name}
                   </h1>
                 </div>
-
-               <BuyNowButton
-  product={product}
-  userEmail={userEmail}
-  className="flex-1"
-/>
+<div className="flex items-center gap-2 flex-shrink-0">
+  <motion.button
+    onClick={toggleWishlist}
+    whileTap={{ scale: 0.9 }}
+    aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0"
+  >
+    <Heart
+      className={`w-5 h-5 ${
+        wishlisted ? "fill-red-500 text-red-500" : "text-gray-400"
+      }`}
+    />
+  </motion.button>
+  </div>
+          
               </div>
 
               <motion.div
@@ -422,18 +431,11 @@ export default function ProductDetailPage() {
                   <ShoppingCart className="w-4 h-4" />
                   {inCart ? "Added to Cart" : "Add to Cart"}
                 </motion.button>
-                <motion.button
-                  disabled={isOutOfStock}
-                  whileHover={{ scale: isOutOfStock ? 1 : 1.02 }}
-                  whileTap={{ scale: isOutOfStock ? 1 : 0.96 }}
-                  className={`flex-1 py-2.5 sm:py-3 rounded-xl text-sm font-semibold transition-colors ${
-                    isOutOfStock
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-900 text-white hover:bg-gray-800"
-                  }`}
-                >
-                  Buy Now
-                </motion.button>
+                    <BuyNowButton
+  product={product}
+  userEmail={userEmail}
+  className="flex-1"
+/>
               </motion.div>
 
               {/* Description */}

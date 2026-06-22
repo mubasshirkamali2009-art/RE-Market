@@ -10,15 +10,60 @@ import { useSession } from "@/lib/auth-client";
 import { LocationSelect, formatLocation } from "@/components/Locetion";
 // Category options
 const CATEGORY_OPTIONS = [
+
+  // Electronics & Tech
   "Phones",
   "Laptops",
-  "Electronics",
+  "Tablets",
+  "Desktop Computers",
+  "TV & Monitors",
+  "Cameras",
+  "Audio & Headphones",
+  "Gaming Consoles",
+  "Smart Watches",
+  "Printers & Scanners",
+  "Networking Devices",
+  "Computer Parts",
+  // Fashion
+  "Men's Clothing",
+  "Women's Clothing",
+  "Kids' Clothing",
   "Footwear",
+  "Bags & Luggage",
+  "Watches",
+  "Jewelry",
   "Accessories",
+  // Home & Living
   "Furniture",
-  "Books",
+  "Home Appliances",
+  "Kitchen & Cookware",
+  "Bedding & Curtains",
+  "Home Décor",
+  "Tools & Hardware",
+  "Air Conditioners & Fans",
+  // Vehicles
+  "Cars",
+  "Motorcycles",
+  "Bicycles",
+  "Auto Parts & Accessories",
+  "CNG & Auto Rickshaws",
+  // Sports & Outdoors
+  "Sports Equipment",
+  "Fitness & Gym",
+  "Outdoor & Camping",
+  // Books, Hobbies & Kids
+  "Books & Magazines",
+  "Toys & Games",
+  "Baby & Kids Items",
+  "Musical Instruments",
+  "Art & Craft Supplies",
+  // Other
+  "Health & Beauty",
+  "Pet Supplies",
+  "Agriculture & Farm",
+  "Office Supplies",
+  "Other",
 ];
-
 // Condition options
 const CONDITION_OPTIONS = ["New", "Like New", "Good", "Fair", "Used"];
 

@@ -102,8 +102,14 @@ function BuyNowModal({ product, userEmail, onClose }) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Order failed");
+      // Read the body FIRST — the old code threw a generic error before
+      // ever reading the response, which hid the real reason (e.g. "Not
+      // enough stock available") behind "Order failed" every time.
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Order failed");
+      }
 
       // Build a readable order object for the success screen.
       // If the API returns the inserted doc, use it; otherwise
@@ -124,7 +130,7 @@ function BuyNowModal({ product, userEmail, onClose }) {
       setStep("success");
     } catch (err) {
       console.error(err);
-      setError("Couldn't place your order. Please try again.");
+      setError(err.message || "Couldn't place your order. Please try again.");
       setStep("confirm");
     }
   }
