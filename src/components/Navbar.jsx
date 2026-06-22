@@ -21,7 +21,6 @@ import {
   Home,
   Sun,
   Moon,
-  
 } from "lucide-react";
 import {
   CircleInfoFill,
@@ -36,17 +35,16 @@ export default function ReMarketNavbar() {
   const [dark, setDark] = useState(false);
   const profileRef = useRef(null);
   const pathname = usePathname();
-const {data:session ,isPending} = useSession()
-console.log("session data in Navbar:" , session , "Is pending:" , isPending
-)
-const user =  session?.user;
+  const {data:session ,isPending} = useSession()
+  console.log("session data in Navbar:" , session , "Is pending:" , isPending)
+  const user =  session?.user;
 
 
-const dashBoardLinks ={
-  buyer:'/dashboard/buyer' ,
-  seller:'/dashboard/seller' ,
-  admin:'/dashboard/admin'
-}
+  const dashBoardLinks ={
+    buyer:'/dashboard/buyer' ,
+    seller:'/dashboard/seller' ,
+    admin:'/dashboard/admin'
+  }
 
 
 
@@ -77,14 +75,14 @@ const dashBoardLinks ={
   // /dashboard/buyer, /dashboard/seller, or /dashboard/admin.
   const dashboardHref = user?.role ? `/dashboard/${user.role}` : "/dashboard";
 
- const navLinks = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "Products", href: "/products", icon: Boxes },
-  { label: "Categories", href: "/categories", icon: LayoutGrid },
-  { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
-  { label: "About us", href: "/about-us", icon: CircleInfoFill }, // ✅ Fixed!
-  { label: "Contact us", href: "/contact-us" , icon: Handset },
-];
+  const navLinks = [
+    { label: "Home", href: "/", icon: Home },
+    { label: "Products", href: "/products", icon: Boxes },
+    { label: "Categories", href: "/categories", icon: LayoutGrid },
+    { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
+    { label: "About us", href: "/about-us", icon: CircleInfoFill }, // ✅ Fixed!
+    { label: "Contact us", href: "/contact-us" , icon: Handset },
+  ];
 
   // "/" only matches exactly. Other routes match their own path and any
   // nested sub-path, e.g. "/products" stays active on "/products/123".
@@ -242,23 +240,14 @@ const dashBoardLinks ={
                         <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
                       </div>
                       <div className="py-1.5">
-                        {[
-                          { icon: User, label: "My Profile" },
-                          { icon: Package, label: "My Listings" },
-                          { icon: Heart, label: "Saved Items" },
-                          { icon: Settings, label: "Settings" },
-                        ].map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <button
-                              key={item.label}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 text-left"
-                            >
-                              <Icon size={16} className="text-slate-400 dark:text-slate-500" />
-                              {item.label}
-                            </button>
-                          );
-                        })}
+                        <Link
+                          href="/my-profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 text-left"
+                        >
+                          <User size={16} className="text-slate-400 dark:text-slate-500" />
+                          My Profile
+                        </Link>
                       </div>
                       <div className="py-1.5 border-t border-slate-100 dark:border-white/10">
                         <button
