@@ -3,6 +3,7 @@ import { useSession } from '@/lib/auth-client';
 import React from 'react';
 import { motion } from "framer-motion";
 import ProtectedRoute from '@/components/ProtectRout';
+import AdaptiveDashboardGrid from '@/components/dashboard/stateCard';
 
 export function Spinner({ size = 24, className = "" }) {
   return (
@@ -43,7 +44,7 @@ console.log("Session data in buyerdata :" , session , "is pending" , isPending)
 
     return ( <ProtectedRoute>
         <div>
-             <h1 className='text-5xl'>Welcome back {user.name}</h1>
+             <AdaptiveDashboardGrid></AdaptiveDashboardGrid>
         </div> </ProtectedRoute>
     );
 };

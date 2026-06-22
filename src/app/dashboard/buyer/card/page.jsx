@@ -16,9 +16,9 @@ import {
   RotateCcw,
   Truck,
   Headphones,
-  Zap,
-  CheckCircle2,
   CreditCard,
+  CheckCircle2,
+   BrushCleaning 
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 
@@ -83,7 +83,7 @@ export default function CartPage() {
   const [removingIds, setRemovingIds] = useState(new Set());
 
   // -----------------------------------------------------
-  // Auth guard — cart is private, same pattern as ProductDetailPage
+  // Auth guard — cart is private
   // -----------------------------------------------------
   useEffect(() => {
     if (!isPending && !session) {
@@ -104,7 +104,6 @@ export default function CartPage() {
         const res = await fetch(`${API_BASE}/api/cart?email=${encodeURIComponent(userEmail)}`);
         if (!res.ok) throw new Error("Failed to fetch cart");
         const data = await res.json();
-        // normalize: make sure every item has a quantity to work with locally
         setCartItems(data.map((item) => ({ quantity: 1, ...item })));
       } catch (err) {
         console.error(err);
@@ -124,7 +123,6 @@ export default function CartPage() {
 
     const snapshot = cartItems;
     setRemovingIds((prev) => new Set(prev).add(productId));
-    // optimistic UI update — drop it from the list right away
     setCartItems((prev) => prev.filter((p) => p._id !== productId));
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -143,7 +141,6 @@ export default function CartPage() {
     } catch (err) {
       console.error("Couldn't remove item from cart", err);
       toast.error("Couldn't remove item, please try again");
-      // revert on failure — put the cart back the way it was
       setCartItems(snapshot);
     } finally {
       setRemovingIds((prev) => {
@@ -155,7 +152,7 @@ export default function CartPage() {
   }
 
   // -----------------------------------------------------
-  // Remove every checked item — same DB call, fired in parallel
+  // Remove every checked item
   // -----------------------------------------------------
   async function removeSelected() {
     if (!userEmail || selectedIds.size === 0) return;
@@ -193,7 +190,7 @@ export default function CartPage() {
   }
 
   // -----------------------------------------------------
-  // Quantity stepper — local first, then best-effort sync to backend
+  // Quantity stepper
   // -----------------------------------------------------
   function changeQuantity(productId, delta) {
     setCartItems((prev) =>
@@ -201,8 +198,7 @@ export default function CartPage() {
         if (item._id !== productId) return item;
         const max = item.stock != null ? Number(item.stock) : 20;
         const nextQty = Math.min(max, Math.max(1, (item.quantity || 1) + delta));
-        // best-effort sync — cart quantity isn't part of the original API contract,
-        // so failures here are silent and don't block the local UI
+        
         fetch(`${API_BASE}/api/cart`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -227,9 +223,6 @@ export default function CartPage() {
     );
   }
 
-  // -----------------------------------------------------
-  // Totals
-  // -----------------------------------------------------
   const totals = useMemo(() => {
     const subtotal = cartItems.reduce((sum, i) => sum + Number(i.price || 0) * (i.quantity || 1), 0);
     const discount = cartItems.reduce((sum, i) => sum + lineDiscount(i), 0);
@@ -254,21 +247,12 @@ export default function CartPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Breadcrumb */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-sm text-gray-500 mb-2"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-gray-500 mb-2">
           Home &gt; Cart
         </motion.p>
 
         {/* Header */}
-        <motion.div
-          initial="hidden"
-          animate="show"
-          variants={staggerContainer}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
-        >
+        <motion.div initial="hidden" animate="show" variants={staggerContainer} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <motion.div variants={fadeUp} custom={0} className="flex items-center gap-3">
             <motion.span
               initial={{ scale: 0.5, rotate: -10, opacity: 0 }}
@@ -280,9 +264,7 @@ export default function CartPage() {
             </motion.span>
             <div>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Cart</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Review your items and proceed to checkout
-              </p>
+              <p className="text-sm text-gray-500 mt-0.5">Review your items and proceed to checkout</p>
             </div>
           </motion.div>
 
@@ -303,27 +285,17 @@ export default function CartPage() {
         {loading && <CartSkeleton />}
 
         {!loading && errorMsg && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10 text-center text-gray-500"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10 text-center text-gray-500">
             {errorMsg}
           </motion.div>
         )}
 
-        {!loading && !errorMsg && cartItems.length === 0 && <EmptyCart />}
+        {!loading && !errorMsg && cartItems.length === 0 && < BrushCleaning  />}
 
         {!loading && !errorMsg && cartItems.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* ============ LEFT: Cart items ============ */}
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={0.05}
-              className="lg:col-span-2"
-            >
+            {/* LEFT: Cart items */}
+            <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0.05} className="lg:col-span-2">
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
                   <h2 className="font-semibold text-gray-900 text-base sm:text-lg">
@@ -346,16 +318,12 @@ export default function CartPage() {
                       whileHover={selectedIds.size > 0 ? { scale: 1.03 } : {}}
                       whileTap={selectedIds.size > 0 ? { scale: 0.96 } : {}}
                       className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                        selectedIds.size === 0
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-red-500 hover:text-red-600"
+                        selectedIds.size === 0 ? "text-gray-300 cursor-not-allowed" : "text-red-500 hover:text-red-600"
                       }`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Remove Selected
-                      {selectedIds.size > 0 && (
-                        <span className="text-xs">({selectedIds.size})</span>
-                      )}
+                      {selectedIds.size > 0 && <span className="text-xs">({selectedIds.size})</span>}
                     </motion.button>
                   </div>
                 </div>
@@ -377,50 +345,28 @@ export default function CartPage() {
                 </motion.div>
 
                 {/* Reserved items banner */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-4 flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl p-3.5"
-                >
-                  <motion.span
-                    animate={{ scale: [1, 1.12, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0"
-                  >
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-4 flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl p-3.5">
+                  <motion.span animate={{ scale: [1, 1.12, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <ShieldCheck className="w-4 h-4 text-green-700" />
                   </motion.span>
                   <p className="text-sm text-gray-700">
                     <span className="font-semibold">Your items are reserved in your cart.</span>{" "}
-                    <span className="text-gray-500">
-                      Complete your purchase before someone else buys them.
-                    </span>
+                    <span className="text-gray-500">Complete your purchase before someone else buys them.</span>
                   </p>
                 </motion.div>
               </div>
             </motion.div>
 
-            {/* ============ RIGHT: Order summary ============ */}
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={fadeUp}
-              custom={0.15}
-              className="lg:col-span-1"
-            >
-              <OrderSummary totals={totals} itemCount={cartItems.length} />
+            {/* RIGHT: Order summary */}
+            <motion.div initial="hidden" animate="show" variants={fadeUp} custom={0.15} className="lg:col-span-1">
+              <OrderSummary totals={totals} cartItems={cartItems} />
             </motion.div>
           </div>
         )}
 
         {/* Trust strip */}
         {!loading && !errorMsg && (
-          <motion.div
-            initial="hidden"
-            animate="show"
-            variants={staggerContainer}
-            className="mt-8 bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-5"
-          >
+          <motion.div initial="hidden" animate="show" variants={staggerContainer} className="mt-8 bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
             <TrustItem icon={ShieldCheck} title="Safe & Secure" desc="Your transaction is 100% secure" delay={0} />
             <TrustItem icon={RotateCcw} title="Easy Returns" desc="7-day easy return policy" delay={0.05} />
             <TrustItem icon={Truck} title="Fast Delivery" desc="Get your order delivered fast" delay={0.1} />
@@ -459,11 +405,7 @@ function CartItemRow({ item, selected, removing, onToggleSelect, onRemove, onCha
           className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 flex-shrink-0"
         />
 
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.2 }}
-          className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-lg overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0"
-        >
+        <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }} className="w-16 h-16 sm:w-[70px] sm:h-[70px] rounded-lg overflow-hidden bg-gray-50 border border-gray-100 flex-shrink-0">
           <img src={thumb} alt={item.name} className="w-full h-full object-cover" />
         </motion.div>
 
@@ -473,25 +415,15 @@ function CartItemRow({ item, selected, removing, onToggleSelect, onRemove, onCha
             {item.category}
           </span>
           <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{item.name}</p>
-          {item.condition && (
-            <p className="text-xs text-gray-500 mt-0.5">Condition: {item.condition}</p>
-          )}
-          {item.sellerInfo?.name && (
-            <p className="text-xs text-gray-400">Seller: {item.sellerInfo.name}</p>
-          )}
+          {item.condition && <p className="text-xs text-gray-500 mt-0.5">Condition: {item.condition}</p>}
+          {item.sellerInfo?.name && <p className="text-xs text-gray-400">Seller: {item.sellerInfo.name}</p>}
         </div>
       </div>
 
       <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-1.5 sm:w-32 flex-shrink-0">
         <div className="text-right">
           <AnimatePresence mode="popLayout">
-            <motion.p
-              key={item.price}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              className="text-sm sm:text-base font-bold text-gray-900"
-            >
+            <motion.p key={item.price} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="text-sm sm:text-base font-bold text-gray-900">
               {formatPrice(item.price)}
             </motion.p>
           </AnimatePresence>
@@ -506,9 +438,7 @@ function CartItemRow({ item, selected, removing, onToggleSelect, onRemove, onCha
             onClick={() => onChangeQuantity(-1)}
             disabled={qty <= 1}
             aria-label="Decrease quantity"
-            className={`w-6 h-6 rounded-md flex items-center justify-center ${
-              qty <= 1 ? "text-gray-300" : "text-gray-600 hover:bg-gray-200"
-            }`}
+            className={`w-6 h-6 rounded-md flex items-center justify-center ${qty <= 1 ? "text-gray-300" : "text-gray-600 hover:bg-gray-200"}`}
           >
             <Minus className="w-3.5 h-3.5" />
           </motion.button>
@@ -551,14 +481,12 @@ function CartItemRow({ item, selected, removing, onToggleSelect, onRemove, onCha
 // =====================================================
 // Order summary panel
 // =====================================================
-function OrderSummary({ totals, itemCount }) {
+function OrderSummary({ totals, cartItems }) {
   const { subtotal, discount, deliveryFee, total } = totals;
+  const itemCount = cartItems.length;
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 lg:sticky lg:top-6"
-    >
+    <motion.div whileHover={{ y: -2 }} className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 lg:sticky lg:top-6">
       <h2 className="font-semibold text-gray-900 text-base sm:text-lg mb-4">Order Summary</h2>
 
       <div className="space-y-2.5 text-sm">
@@ -567,11 +495,7 @@ function OrderSummary({ totals, itemCount }) {
           <span className="font-medium text-gray-900">{formatPrice(subtotal)}</span>
         </div>
         {discount > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center justify-between text-gray-600"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between text-gray-600">
             <span>Discount</span>
             <span className="font-medium text-red-500">- {formatPrice(discount)}</span>
           </motion.div>
@@ -610,20 +534,10 @@ function OrderSummary({ totals, itemCount }) {
         whileHover={{ scale: 1.015 }}
         whileTap={{ scale: 0.97 }}
         onClick={() => toast.success("Heading to checkout...")}
-        className="w-full mt-5 py-3 rounded-xl bg-green-600 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-sm"
+        className="w-full mt-5 py-3 rounded-xl bg-green-600 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors shadow-sm mb-2"
       >
         <ShoppingCart className="w-4 h-4" />
         Buy All ({itemCount} Item{itemCount > 1 ? "s" : ""})
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.015 }}
-        whileTap={{ scale: 0.97 }}
-        onClick={() => toast("Order placed — we'll confirm shortly", { icon: "⚡" })}
-        className="w-full mt-2.5 py-3 rounded-xl border border-gray-900 text-gray-900 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-900 hover:text-white transition-colors"
-      >
-        <Zap className="w-4 h-4" />
-        Place Order
       </motion.button>
 
       <div className="mt-5 text-center">
@@ -654,49 +568,11 @@ function OrderSummary({ totals, itemCount }) {
 function TrustItem({ icon: Icon, title, desc, delay }) {
   return (
     <motion.div variants={fadeUp} custom={delay} className="flex flex-col items-center text-center gap-2">
-      <motion.span
-        whileHover={{ scale: 1.1, rotate: 5 }}
-        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-50 flex items-center justify-center"
-      >
+      <motion.span whileHover={{ scale: 1.1, rotate: 5 }} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-50 flex items-center justify-center">
         <Icon className="w-5 h-5 text-green-700" />
       </motion.span>
       <p className="text-xs sm:text-sm font-semibold text-gray-900">{title}</p>
       <p className="text-[11px] sm:text-xs text-gray-500 leading-snug hidden sm:block">{desc}</p>
-    </motion.div>
-  );
-}
-
-// =====================================================
-// Empty cart state
-// =====================================================
-function EmptyCart() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-2xl border border-gray-200 p-10 sm:p-14 text-center"
-    >
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4"
-      >
-        <ShoppingBag className="w-7 h-7 text-green-600" />
-      </motion.div>
-      <h3 className="text-lg font-semibold text-gray-900">Your cart is empty</h3>
-      <p className="text-sm text-gray-500 mt-1.5 max-w-sm mx-auto">
-        Looks like you havent added anything yet. Browse products and find something you like.
-      </p>
-      <Link href="/dashboard/products">
-        <motion.span
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Browse Products
-        </motion.span>
-      </Link>
     </motion.div>
   );
 }
@@ -718,7 +594,6 @@ function CartSkeleton() {
         <div className="h-4 w-full bg-gray-100 rounded-lg" />
         <div className="h-4 w-full bg-gray-100 rounded-lg" />
         <div className="h-10 w-full bg-gray-100 rounded-xl mt-4" />
-        <div className="h-10 w-full bg-gray-100 rounded-xl" />
       </div>
     </div>
   );

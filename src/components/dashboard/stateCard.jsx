@@ -1,171 +1,133 @@
 "use client";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { ChevronRight } from "@gravity-ui/icons";
+import React, { useEffect, useState } from "react";
+// Import both from your auth file to capture the session safely
+import { useSession, authClient } from "@/lib/auth-client"; // Adjust this path to your actual auth file
+import { 
+  ShoppingCart, 
+  ShoppingBag, 
+  Heart, 
+  TrendingUp, 
+  Package, 
+  XCircle, 
+  Users, 
+  UserCheck 
+} from "lucide-react";
 
-const toneStyles = {
-  default: "bg-[#eef3e2] text-[#1f4d3c]",
-  success: "bg-[#dcf2e3] text-[#1f8a4c]",
-  warning: "bg-[#fdf0d8] text-[#b8790a]",
-  danger: "bg-[#fbeaea] text-[#c0392b]",
-};
+const API_BASE_URL = "http://localhost:5000";
 
-const actionToneStyles = {
-  default: "text-[#2c6b4f] hover:text-[#1f4d3c]",
-  success: "text-[#1f8a4c] hover:text-[#176638]",
-  warning: "text-[#b8790a] hover:text-[#8f5e08]",
-  danger: "text-[#c0392b] hover:text-[#9c2e23]",
-};
+export default function AdaptiveDashboardGrid() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const glowStyles = {
-  default: "rgba(44, 107, 79, 0.35)",
-  success: "rgba(31, 138, 76, 0.35)",
-  warning: "rgba(184, 121, 10, 0.3)",
-  danger: "rgba(192, 57, 43, 0.3)",
-};
+  // 1. Grab session from the destructured useSession hook
+  const { data: hookSession, isPending: hookPending } = useSession();
+  
+  // 2. Fallback: Grab session directly from the configured client instance state
+  const clientSession = authClient?.useSession?.()?.data || null;
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 48, scale: 0.9, rotateX: -8 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    rotateX: 0,
-    transition: {
-      delay: i * 0.12,
-      duration: 0.65,
-      type: "spring",
-      stiffness: 170,
-      damping: 15,
-    },
-  }),
-};
+  // Resolve the active email address from either instance
+  const activeEmail = hookSession?.user?.email || clientSession?.user?.email || null;
 
-/**
- * Single stat card.
- *
- * @param {object} props
- * @param {React.ComponentType} props.icon - Gravity UI icon component
- * @param {string} props.label - e.g. "Total Products"
- * @param {string|number} props.value - e.g. 42 or "$4,450"
- * @param {string} props.actionLabel - e.g. "View all"
- * @param {string} props.href - link target for the action
- * @param {"default"|"success"|"warning"|"danger"} props.tone - accent tone for icon + action
- * @param {number} props.index - position in grid, drives stagger delay
- */
-export function StatCard({
-  icon: Icon,
-  label,
-  value,
-  actionLabel,
-  href = "#",
-  tone = "default",
-  index = 0,
-}) {
+  useEffect(() => {
+    // Wait until the auth status finishes checking before throwing an error
+    if (hookPending) return;
+
+    if (!activeEmail) {
+      setLoading(false);
+      setError("No active session found. Please check your login status.");
+      return;
+    }
+
+    async function loadStats() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(
+          `${API_BASE_URL}/api/dashboard/stats?email=${encodeURIComponent(activeEmail)}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Server returned status: ${response.status}`);
+        }
+        
+        const payload = await response.json();
+        setData(payload);
+      } catch (err) {
+        console.error("Dashboard fetching error:", err);
+        setError("Failed to fetch dashboard metric updates from server.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, [activeEmail, hookPending]);
+
+  // Display loaders while auth is tracking down the session or data is fetching
+  if (hookPending || (loading && !data)) return <MarketplaceStatsLoader />;
+  if (error && !data) return <p className="text-sm font-medium text-red-500 p-4">{error}</p>;
+  if (!data) return <p className="text-sm font-medium text-gray-500 p-4">No dashboard data available.</p>;
+
+  const { role, metrics } = data;
+
+  // Configuration map for card displays
+  const resolveCardsByRole = () => {
+    switch (role) {
+      case "buyer":
+        return [
+          { label: "Total Orders", value: metrics.totalOrders || 0, icon: ShoppingBag, color: "bg-green-500/10 text-green-600 border-green-200" },
+          { label: "Total Wishlist", value: metrics.savedItems || 0, icon: Heart, color: "bg-amber-500/10 text-amber-600 border-amber-200" },
+          { label: "Total Cart", value: metrics.totalCarts || 0, icon: ShoppingCart, color: "bg-blue-500/10 text-blue-600 border-blue-200" },
+          { label: "Total Spent", value: `৳${(metrics.totalSpent || 0).toLocaleString()}`, icon: TrendingUp, color: "bg-red-500/10 text-red-600 border-red-200" },
+        ];
+      case "seller":
+        return [
+          { label: "Total Sales", value: `৳${(metrics.totalSalesRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: "bg-green-500/10 text-green-600 border-green-200" },
+          { label: "Total Products", value: metrics.totalProducts || 0, icon: Package, color: "bg-blue-500/10 text-blue-600 border-blue-200" },
+          { label: "Pending Processing", value: metrics.totalPending || 0, icon: ShoppingBag, color: "bg-amber-500/10 text-amber-600 border-amber-200" },
+          { label: "Total Canceled", value: metrics.totalCanceled || 0, icon: XCircle, color: "bg-red-500/10 text-red-600 border-red-200" },
+        ];
+      case "admin":
+        return [
+          { label: "Total Users", value: metrics.totalUsers || 0, icon: Users, color: "bg-slate-500/10 text-slate-600 border-slate-200" },
+          { label: "Total Products", value: metrics.totalProducts || 0, icon: Package, color: "bg-red-500/10 text-red-600 border-red-200" },
+          { label: "Total Sellers", value: metrics.totalSellers || 0, icon: UserCheck, color: "bg-amber-500/10 text-amber-600 border-amber-200" },
+          { label: "Total Buyers", value: metrics.totalBuyers || 0, icon: UserCheck, color: "bg-green-500/10 text-green-600 border-green-200" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const cards = resolveCardsByRole();
+
   return (
-    <motion.div
-      custom={index}
-      initial="hidden"
-      animate="visible"
-      variants={cardVariants}
-      style={{ perspective: 800 }}
-      whileHover={{
-        y: -10,
-        scale: 1.035,
-        rotateX: 3,
-        rotateY: -2,
-        boxShadow: `0 28px 48px -16px ${glowStyles[tone]}, 0 8px 16px -8px rgba(31, 77, 60, 0.18)`,
-        transition: { duration: 0.35, ease: "easeOut" },
-      }}
-      whileTap={{ scale: 0.96 }}
-      className="group relative overflow-hidden rounded-[20px] border border-[#e4e9dc] bg-white p-5 shadow-[0_8px_24px_-12px_rgba(44,107,79,0.18)]"
-    >
-      {/* layered ambient glow, sits behind content */}
-      <motion.div
-        className={`absolute -right-8 -top-8 size-32 rounded-full ${toneStyles[tone]} opacity-50 blur-xl`}
-        animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0.7, 0.5] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className={`absolute -bottom-10 -left-6 size-24 rounded-full ${toneStyles[tone]} opacity-30 blur-lg`}
-        animate={{ scale: [1, 1.2, 1] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-      />
-
-      {/* sheen sweep on hover */}
-      <motion.div
-        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent"
-        initial={false}
-        whileHover={{ translateX: "200%" }}
-        transition={{ duration: 0.8, ease: "easeInOut" }}
-      />
-
-      <div className="relative flex items-center justify-between">
-        <p className="text-sm font-medium text-[#6b7a6d]">{label}</p>
-        {Icon && (
-          <motion.span
-            initial={{ rotate: -120, opacity: 0, scale: 0.4 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.12 + 0.25, duration: 0.55, type: "spring", stiffness: 200 }}
-            whileHover={{ rotate: 14, scale: 1.15 }}
-            className={`flex size-9 items-center justify-center rounded-xl ${toneStyles[tone]} shadow-[0_4px_12px_-4px_rgba(44,107,79,0.4)]`}
-          >
-            <Icon className="size-4.5" />
-          </motion.span>
-        )}
-      </div>
-
-      <motion.p
-        key={value}
-        initial={{ opacity: 0, x: -20, filter: "blur(4px)" }}
-        animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-        transition={{ delay: index * 0.12 + 0.35, duration: 0.5 }}
-        className="relative mt-3 text-3xl font-bold tracking-tight text-[#1f2d22]"
-      >
-        {value}
-      </motion.p>
-
-      {actionLabel && (
-        <Link
-          href={href}
-          className={`relative mt-3 inline-flex items-center gap-1 text-sm font-semibold transition-colors ${actionToneStyles[tone]}`}
-        >
-          <motion.span className="inline-flex items-center gap-1" whileHover="hover">
-            {actionLabel}
-            <motion.span
-              variants={{ hover: { x: 5 } }}
-              transition={{ duration: 0.2 }}
-              className="inline-flex"
-            >
-              <ChevronRight className="size-3.5" />
-            </motion.span>
-          </motion.span>
-        </Link>
-      )}
-
-      {/* bottom accent bar grows in on load */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: index * 0.12 + 0.5, duration: 0.5, ease: "easeOut" }}
-        style={{ originX: 0 }}
-        className={`absolute bottom-0 left-0 h-1 w-full ${toneStyles[tone]}`}
-      />
-    </motion.div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4">
+      {cards.map((card, idx) => {
+        const IconComponent = card.icon;
+        return (
+          <div key={idx} className="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">{card.label}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
+            </div>
+            <div className={`p-3 rounded-xl border ${card.color}`}>
+              <IconComponent className="w-6 h-6" />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
-/**
- * Grid of stat cards, fed by a data array.
- *
- * @param {object} props
- * @param {Array<{icon: React.ComponentType, label: string, value: string|number, actionLabel?: string, href?: string, tone?: string}>} props.stats
- */
-export function StatsGrid({ stats = [] }) {
+function MarketplaceStatsLoader() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {stats.map((stat, i) => (
-        <StatCard key={stat.label} {...stat} index={i} />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4 animate-pulse">
+      {[1, 2, 3, 4].map((n) => (
+        <div key={n} className="h-[110px] w-full rounded-2xl border border-gray-100 bg-gray-50" />
       ))}
     </div>
   );

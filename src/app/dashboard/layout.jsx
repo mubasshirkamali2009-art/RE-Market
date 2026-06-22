@@ -1,4 +1,5 @@
-import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+
+import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import React from 'react';
 
 const DashboardLayout = ({children}) => {
@@ -6,7 +7,7 @@ const DashboardLayout = ({children}) => {
         <div className='flex min-h-screen'>
             
             
-            <DashboardSidebar/>
+            <DashboardSidebar></DashboardSidebar>
             <div className='flex-1'>
                 
 {children}

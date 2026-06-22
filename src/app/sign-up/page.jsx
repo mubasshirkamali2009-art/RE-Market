@@ -209,18 +209,7 @@ export default function SignUp({ onSwitchToSignIn, onSignUpSuccess }) {
               <label className="mb-1.5 block text-sm font-semibold text-[#33402f]">
                 Role
               </label>
-              <div className="flex gap-2 text-sm font-bold">
-                <input
-                  type="radio"
-                  className="rounded-[10px] border radio-sm radio radio-success"
-                  id="admin"
-                  name="role"
-                  value="admin"
-                  checked={formData.role === "admin"}
-                  onChange={handleChange}
-                />
-                <label htmlFor="admin"> Admin</label>
-              </div>
+             
               <div className="flex gap-2 text-sm font-bold">
                 <input
                   type="radio"

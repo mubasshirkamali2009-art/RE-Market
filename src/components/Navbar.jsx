@@ -42,6 +42,11 @@ console.log("session data in Navbar:" , session , "Is pending:" , isPending
 const user =  session?.user;
 
 
+const dashBoardLinks ={
+  buyer:'/dashboard/buyer' ,
+  seller:'/dashboard/seller' ,
+  admin:'/dashboard/admin'
+}
 
 
 

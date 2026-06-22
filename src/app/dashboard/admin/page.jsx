@@ -2,6 +2,7 @@
 import { useSession } from '@/lib/auth-client';
 import React from 'react';
 import { motion } from "framer-motion";
+import AdaptiveDashboardGrid from '@/components/dashboard/stateCard';
 
 export function Spinner({ size = 24, className = "" }) {
   return (
@@ -42,7 +43,7 @@ console.log("Session data in admindata :" , session , "is pending" , isPending)
 
     return (
         <div>
-             <h1 className='text-5xl'>Welcome back {user.name}</h1>
+             <AdaptiveDashboardGrid></AdaptiveDashboardGrid>
         </div>
     );
 };
