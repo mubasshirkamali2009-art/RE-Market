@@ -1,258 +1,400 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession, authClient } from "@/lib/auth-client";
+import { useSession } from '@/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast'
+import {
+  User, Mail, Phone, MapPin, Lock, Camera,
+  CheckCircle2, Eye, EyeOff, ShieldCheck, HelpCircle
+} from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API = "http://localhost:5000";
 
-const ProfailPage = () => {
-  const { data: session } = useSession();
-  const email = session?.user?.email;
+const ProfileManagePage = () => {
+  // ✅ FIX: hook called inside the component, as a function
+  const { data: session, isPending } = useSession();
+  const user = session?.user;
 
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
+  // ── Personal info state ────────────────────────────────────────────
+  const [profile, setProfile] = useState({
+    name: "",
+    image: "",
+    phone: "",
+    address: "",
+  });
+  const [savingInfo, setSavingInfo] = useState(false);
 
-  const [form, setForm] = useState({ name: "", image: "", phone: "", address: "" });
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  // ── Password state ─────────────────────────────────────────────────
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwMessage, setPwMessage] = useState("");
-
-  // ---- profile data load (GET /api/profile) ----
+  // ── Show session data immediately (name/image from Google login) ───
   useEffect(() => {
-    if (!email) return;
+    if (!user) return;
+    setProfile((p) => ({
+      ...p,
+      name:  p.name  || user.name  || "",
+      image: p.image || user.image || "",
+    }));
+  }, [user?.name, user?.image]);
 
-    async function loadProfile() {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/api/profile?email=${encodeURIComponent(email)}`);
-        if (!res.ok) throw new Error("Failed to load profile");
-        const data = await res.json();
-        setProfile(data);
-        setForm({
-          name: data.name || "",
-          image: data.image || "",
-          phone: data.phone || "",
+  // ── Load saved profile from backend (phone/address/overrides) ───────
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`${API}/api/profile/${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.error) return; // not found yet, keep session defaults
+        setProfile((p) => ({
+          name:    data.name    || p.name    || "",
+          image:   data.image   || p.image   || "",
+          phone:   data.phone   || "",
           address: data.address || "",
-        });
-      } catch (err) {
-        console.error(err);
-        setMessage("Profile load korte problem hoyeche.");
-      } finally {
-        setLoading(false);
-      }
-    }
+        }));
+      })
+      .catch(() => toast.error("Could not load profile details."));
+  }, [user?.id]);
 
-    loadProfile();
-  }, [email]);
+  // ── Profile completeness (simple heuristic) ────────────────────────
+  const fields = [profile.name, profile.image, profile.phone, profile.address];
+  const filledCount = fields.filter((f) => f && f.trim().length > 0).length;
+  const completePercent = Math.round((filledCount / fields.length) * 100);
 
-  // ---- profile update (PATCH /api/profile) ----
-  async function handleSave(e) {
+  // ── Save personal info ──────────────────────────────────────────────
+  const handleSaveInfo = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setMessage("");
+    if (!user?.id) return toast.error("You must be signed in.");
 
+    setSavingInfo(true);
     try {
-      const res = await fetch(`${API_URL}/api/profile`, {
+      // ✅ Same pattern as products edit — target by id in the URL, not by email
+      const res = await fetch(`${API}/api/profile/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, ...form }),
+        body: JSON.stringify({
+          name:    profile.name,
+          image:   profile.image,
+          phone:   profile.phone,
+          address: profile.address,
+        }),
       });
-      if (!res.ok) throw new Error("Update failed");
-
-      setProfile((prev) => ({ ...prev, ...form }));
-      setMessage("Profile update hoyeche.");
-      setEditing(false);
-    } catch (err) {
-      console.error(err);
-      setMessage("Update korte problem hoyeche.");
+      if (!res.ok) throw new Error();
+      toast.success("Profile updated successfully.");
+    } catch {
+      toast.error("Failed to update profile. Please try again.");
     } finally {
-      setSaving(false);
+      setSavingInfo(false);
     }
-  }
+  };
 
-  // ---- password change (better-auth) ----
-  async function handlePasswordChange(e) {
+  // ── Change password ─────────────────────────────────────────────────
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    setPwMessage("");
 
-    if (pwForm.next.length < 8) {
-      setPwMessage("Notun password kompokkhe 8 character hote hobe.");
-      return;
-    }
-    if (pwForm.next !== pwForm.confirm) {
-      setPwMessage("Notun password mile nai.");
-      return;
-    }
+    if (!currentPassword) return toast.error("Please enter your current password.");
+    if (newPassword.length < 8) return toast.error("New password must be at least 8 characters.");
+    if (newPassword !== confirmPassword) return toast.error("New password and confirmation do not match.");
+    if (newPassword === currentPassword) return toast.error("New password must be different from current password.");
 
-    setPwSaving(true);
+    setSavingPassword(true);
     try {
       const { error } = await authClient.changePassword({
-        currentPassword: pwForm.current,
-        newPassword: pwForm.next,
+        currentPassword,
+        newPassword,
         revokeOtherSessions: true,
       });
 
       if (error) {
-        setPwMessage(error.message || "Password change kora jay nai.");
-      } else {
-        setPwMessage("Password update hoyeche.");
-        setPwForm({ current: "", next: "", confirm: "" });
+        const msg =
+          error.code === "INVALID_PASSWORD" ? "Current password is incorrect." :
+          error.message ?? "Failed to update password.";
+        toast.error(msg);
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      setPwMessage("Kichu ekta problem hoyeche.");
+
+      toast.success("Password updated successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     } finally {
-      setPwSaving(false);
+      setSavingPassword(false);
     }
+  };
+
+  // ── Loading / unauthenticated states ────────────────────────────────
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <span className="loading loading-spinner loading-lg text-emerald-600" />
+      </div>
+    );
   }
 
-  if (!email) {
-    return <p className="p-6 text-center text-gray-500">Profile dekhte hole sign in koro.</p>;
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <p className="text-gray-500 text-sm">Please sign in to manage your profile.</p>
+      </div>
+    );
   }
 
-  if (loading) {
-    return <p className="p-6 text-center text-gray-500">Loading...</p>;
-  }
+  const initials = (profile.name || user.name || "?")
+    .split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-bold">My Profile</h1>
+    <div className="min-h-screen bg-gray-50 px-4 py-10">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
 
-      {/* ---- View / Edit profile info ---- */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        {!editing ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <img
-                src={profile?.image || "/default-avatar.png"}
-                alt="Profile"
-                className="h-16 w-16 rounded-full object-cover bg-gray-100"
-              />
-              <div>
-                <p className="font-semibold">{profile?.name || "No name set"}</p>
-                <p className="text-sm text-gray-500">{email}</p>
+        {/* ══════════════════ LEFT: Profile Card ══════════════════ */}
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 text-center">
+            {/* Avatar */}
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-emerald-100 flex items-center justify-center">
+                {(profile.image || user.image) ? (
+                  <img
+                    src={profile.image || user.image}
+                    alt={profile.name || user.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-emerald-600">{initials}</span>
+                )}
+              </div>
+              <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center">
+                <Camera size={12} className="text-white" />
               </div>
             </div>
 
-            <p><span className="text-gray-500">Phone:</span> {profile?.phone || "—"}</p>
-            <p><span className="text-gray-500">Address:</span> {profile?.address || "—"}</p>
+            <h2 className="font-bold text-gray-900">{profile.name || user.name}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Buyer Account</p>
 
-            <button
-              onClick={() => setEditing(true)}
-              className="rounded-lg bg-black px-4 py-2 text-sm text-white"
-            >
-              Edit Profile
-            </button>
+            <div className="flex items-center justify-center gap-1.5 mt-2 text-emerald-600 text-xs font-semibold">
+              <CheckCircle2 size={14} />
+              Verified Account
+            </div>
+
+            {/* Profile completeness */}
+            <div className="mt-5 text-left">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 mb-1.5">
+                <span>Profile Complete</span>
+                <span>{completePercent}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+                  style={{ width: `${completePercent}%` }}
+                />
+              </div>
+            </div>
           </div>
-        ) : (
-          <form onSubmit={handleSave} className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Name</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              />
+
+          {/* Help card */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+            <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm mb-1.5">
+              <HelpCircle size={16} />
+              Need Help?
+            </div>
+            <p className="text-xs text-emerald-700/70 leading-relaxed mb-3">
+              Visit our Help Center for account related queries.
+            </p>
+            <a href="/help" className="text-xs font-semibold text-emerald-700 hover:underline inline-flex items-center gap-1">
+              Go to Help Center →
+            </a>
+          </div>
+        </div>
+
+        {/* ══════════════════ RIGHT: Forms ══════════════════ */}
+        <div className="space-y-6">
+
+          {/* ── Personal Information ───────────────────────────── */}
+          <form onSubmit={handleSaveInfo} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+            <div className="flex items-start gap-2 mb-6">
+              <User size={18} className="text-emerald-600 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-gray-900">Personal Information</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Update your personal details and contact information</p>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Image URL</label>
-              <input
-                type="text"
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                placeholder="https://..."
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Full name */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Full Name</label>
+                <div className="relative">
+                  <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={profile.name}
+                    onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="Your full name"
+                    className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Email (read-only) */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    readOnly
+                    value={user.email}
+                    className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Phone Number</label>
+                <div className="relative">
+                  <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={profile.phone}
+                    onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="+880 1XXX-XXXXXX"
+                    className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Profile image URL */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Profile Image URL</label>
+                <div className="relative">
+                  <Camera size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="url"
+                    value={profile.image}
+                    onChange={(e) => setProfile((p) => ({ ...p, image: e.target.value }))}
+                    placeholder="https://example.com/photo.jpg"
+                    className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Address — full width */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Address</label>
+                <div className="relative">
+                  <MapPin size={15} className="absolute left-3 top-3 text-gray-400" />
+                  <textarea
+                    rows={2}
+                    value={profile.address}
+                    onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
+                    placeholder="Street, City, Country"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all resize-none"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Phone</label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Address</label>
-              <textarea
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                rows={3}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              />
-            </div>
-
-            <div className="flex gap-2">
+            <div className="flex justify-end mt-6">
               <button
                 type="submit"
-                disabled={saving}
-                className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+                disabled={savingInfo}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60 text-white text-sm font-semibold transition-all"
               >
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
-              >
-                Cancel
+                {savingInfo && <span className="loading loading-spinner loading-xs" />}
+                Save Changes
               </button>
             </div>
           </form>
-        )}
 
-        {message && <p className="mt-3 text-sm">{message}</p>}
-      </div>
+          {/* ── Change Password ────────────────────────────────── */}
+          <form onSubmit={handleChangePassword} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+            <div className="flex items-start gap-2 mb-6">
+              <Lock size={18} className="text-emerald-600 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-gray-900">Change Password</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Ensure your account is using a long, random password to stay secure</p>
+              </div>
+            </div>
 
-      {/* ---- Change password ---- */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold">Change Password</h2>
-        <form onSubmit={handlePasswordChange} className="space-y-3">
-          <input
-            type="password"
-            placeholder="Current password"
-            value={pwForm.current}
-            onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-            required
-          />
-          <input
-            type="password"
-            placeholder="New password"
-            value={pwForm.next}
-            onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={pwForm.confirm}
-            onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-            required
-          />
-          <button
-            type="submit"
-            disabled={pwSaving}
-            className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
-          >
-            {pwSaving ? "Updating..." : "Update Password"}
-          </button>
-        </form>
-        {pwMessage && <p className="mt-3 text-sm">{pwMessage}</p>}
+            <div className="space-y-4">
+              <PasswordField
+                label="Current Password"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+                show={showCurrent}
+                onToggle={() => setShowCurrent(!showCurrent)}
+                placeholder="Enter your current password"
+              />
+              <PasswordField
+                label="New Password"
+                value={newPassword}
+                onChange={setNewPassword}
+                show={showNew}
+                onToggle={() => setShowNew(!showNew)}
+                placeholder="Enter new password"
+              />
+              <PasswordField
+                label="Confirm New Password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                show={showConfirm}
+                onToggle={() => setShowConfirm(!showConfirm)}
+                placeholder="Confirm new password"
+              />
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                type="submit"
+                disabled={savingPassword}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60 text-white text-sm font-semibold transition-all"
+              >
+                {savingPassword
+                  ? <><span className="loading loading-spinner loading-xs" /> Updating…</>
+                  : <><ShieldCheck size={16} /> Update Password</>
+                }
+              </button>
+            </div>
+          </form>
+
+        </div>
       </div>
     </div>
   );
 };
 
-export default ProfailPage;
+// ── Reusable password input with show/hide toggle ──────────────────────
+function PasswordField({ label, value, onChange, show, onToggle, placeholder }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-600 mb-1.5">{label}</label>
+      <div className="relative">
+        <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-9 pr-9 h-10 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          aria-label={show ? "Hide password" : "Show password"}
+        >
+          {show ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default ProfileManagePage;
