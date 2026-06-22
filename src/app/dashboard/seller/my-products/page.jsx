@@ -6,6 +6,7 @@ import { ProductsTable } from "@/components/MyProducts";
 import { ProductSearch } from "@/components/search";
 import { EditProductModal } from "@/components/Edit";
 import { DeleteProductDialog } from "@/components/Delete";
+import ProtectedRoute from "@/components/ProtectRout";
 
 export default function MyProductsPage() {
   const router = useRouter();
@@ -23,7 +24,8 @@ export default function MyProductsPage() {
   };
 
   return (
-    <div className="grid gap-5">
+    <ProtectedRoute>
+      <div className="grid gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-[#1f4d3c]">My Products</h1>
         <ProductSearch
@@ -54,5 +56,6 @@ export default function MyProductsPage() {
         onDeleted={() => setRefreshKey((k) => k + 1)}
       />
     </div>
+    </ProtectedRoute>
   );
 }

@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 // Importing your standalone component overlays
 import { DeleteProductDialog } from "@/components/Delete";
 import { EditProductModal } from "@/components/Edit";
+import ProtectedRoute from "@/components/ProtectRout";
 
 export default function ProductDetailsPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -109,7 +110,8 @@ export default function ProductDetailsPage({ params: paramsPromise }) {
   const statusLabel = product.status === "available" ? "Active" : (product.status || "Active");
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 font-sans">
+    <ProtectedRoute>
+      <div className="max-w-6xl mx-auto p-4 md:p-6 font-sans">
       {/* Breadcrumb + back button row */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm">
@@ -312,5 +314,6 @@ export default function ProductDetailsPage({ params: paramsPromise }) {
         }}
       />
     </div>
+    </ProtectedRoute>
   );
 }

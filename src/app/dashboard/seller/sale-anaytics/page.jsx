@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   AreaChart,
   Area,
@@ -11,7 +12,8 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { Smartphone, Laptop, Headphones, Footprints, TrendingUp } from "lucide-react";
+import { Smartphone, Laptop, Headphones, Footprints, TrendingUp, Loader2 } from "lucide-react";
+import { useSession } from "@/lib/auth-client"; // adjust path to wherever authClient is exported from
 
 // =====================================================
 // FAKE / PLACEHOLDER DATA
@@ -51,6 +53,30 @@ const topSellingProducts = [
 // Main Page
 // =====================================================
 export default function SellerAnalyticsPage() {
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  useEffect(() => {
+    // Wait until better-auth finishes loading the session before deciding.
+    if (!isPending && !session) {
+      router.push("/sign-in");
+    }
+  }, [isPending, session, router]);
+
+  // While the session is loading, show a spinner instead of flashing the page.
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
+      </div>
+    );
+  }
+
+  // Not logged in: render nothing while the redirect above kicks in.
+  if (!session) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

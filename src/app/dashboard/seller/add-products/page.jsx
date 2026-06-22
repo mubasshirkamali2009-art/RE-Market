@@ -1,14 +1,15 @@
 "use client";
 import React from 'react';
 import { AddProductForm } from '@/components/dashboard/sellerAddProducts';
+import ProtectedRoute from '@/components/ProtectRout';
 
 const AddProductsPage = () => {
  
 
-  return (
+  return ( <ProtectedRoute>
     <div>
       <AddProductForm  />
-    </div>
+    </div> </ProtectedRoute>
   );
 };
 

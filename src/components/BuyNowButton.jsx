@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   Zap,
   X,
@@ -14,6 +15,7 @@ import {
   BadgeCheck,
   CreditCard,
 } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 // =====================================================
 // CONFIG
@@ -30,25 +32,50 @@ function formatPrice(n) {
 //   • WishlistPage  (pass product + userEmail)
 //   • ProductDetailPage (pass product + userEmail)
 //
+// Only users with role "buyer" can place orders. Sellers (and anyone
+// without a buyer role) get a toast error instead of opening the modal.
+//
 // Props:
 //   product    — the full product object from MongoDB
-//   userEmail  — logged-in user's email (from session)
+//   userEmail  — logged-in user's email (from session) — kept for backwards
+//                compatibility, but the role check below uses the session directly
 //   className  — optional extra Tailwind classes for the button wrapper
 //   label      — optional override for the button label (default "Buy Now")
 // =====================================================
 export default function BuyNowButton({ product, userEmail, className = "", label = "Buy Now" }) {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
+
+  const role = session?.user?.role;
+  const isBuyer = role === "buyer";
 
   if (!product) return null;
+
+  function handleClick() {
+    if (!session) {
+      toast.error("Please sign in to place an order.");
+      return;
+    }
+    if (!isBuyer) {
+      toast.error("Only buyers can order products.");
+      return;
+    }
+    setOpen(true);
+  }
 
   return (
     <>
       {/* Trigger */}
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={() => setOpen(true)}
-        className={`inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors ${className}`}
+        whileHover={{ scale: isBuyer ? 1.02 : 1 }}
+        whileTap={{ scale: isBuyer ? 0.96 : 1 }}
+        onClick={handleClick}
+        aria-disabled={!isBuyer}
+        className={`inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors ${
+          isBuyer
+            ? "bg-gray-900 text-white hover:bg-gray-800"
+            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+        } ${className}`}
       >
         <Zap className="w-4 h-4" />
         {label}
@@ -56,10 +83,10 @@ export default function BuyNowButton({ product, userEmail, className = "", label
 
       {/* Modal */}
       <AnimatePresence>
-        {open && (
+        {open && isBuyer && (
           <BuyNowModal
             product={product}
-            userEmail={userEmail}
+            userEmail={userEmail || session?.user?.email}
             onClose={() => setOpen(false)}
           />
         )}
@@ -104,7 +131,8 @@ function BuyNowModal({ product, userEmail, onClose }) {
 
       // Read the body FIRST — the old code threw a generic error before
       // ever reading the response, which hid the real reason (e.g. "Not
-      // enough stock available") behind "Order failed" every time.
+      // enough stock available" or "Only buyers can order products") behind
+      // "Order failed" every time.
       const data = await res.json();
 
       if (!res.ok) {

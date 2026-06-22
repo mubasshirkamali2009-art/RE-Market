@@ -1,11 +1,13 @@
-import { OrdersTable } from "@/components/ManageOrders";
+import SellerOrdersPage from "@/components/ManageOrders";
+import ProtectedRoute from "@/components/ProtectRout";
 import React from 'react';
 
 const MyProductsPage= () => {
-    return (
+    return ( <ProtectedRoute>
         <div>
-            <OrdersTable></OrdersTable>
-        </div>
+           
+            <SellerOrdersPage></SellerOrdersPage>
+        </div></ProtectedRoute>
     );
 };
 
