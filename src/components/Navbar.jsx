@@ -21,7 +21,12 @@ import {
   Home,
   Sun,
   Moon,
+  
 } from "lucide-react";
+import {
+  CircleInfoFill,
+  Handset
+} from '@gravity-ui/icons';
 
 
 export default function ReMarketNavbar() {
@@ -67,12 +72,14 @@ const user =  session?.user;
   // /dashboard/buyer, /dashboard/seller, or /dashboard/admin.
   const dashboardHref = user?.role ? `/dashboard/${user.role}` : "/dashboard";
 
-  const navLinks = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Products", href: "/products", icon: Boxes },
-    { label: "Categories", href: "/categories", icon: LayoutGrid },
-    { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
-  ];
+ const navLinks = [
+  { label: "Home", href: "/", icon: Home },
+  { label: "Products", href: "/products", icon: Boxes },
+  { label: "Categories", href: "/categories", icon: LayoutGrid },
+  { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
+  { label: "About us", href: "/about-us", icon: CircleInfoFill }, // ✅ Fixed!
+  { label: "Contact us", href: "/contact-us" , icon: Handset },
+];
 
   // "/" only matches exactly. Other routes match their own path and any
   // nested sub-path, e.g. "/products" stays active on "/products/123".

@@ -65,7 +65,8 @@ export default function LatestProducts() {
   }, []);
 
   return (
-    <section className="w-full py-10 px-4 sm:px-6 lg:px-8">
+    /* FIXED: Swapped w-full for max-w-6xl mx-auto to fit cleanly alongside your other components */
+    <section className="max-w-6xl mx-auto py-10 px-6">
       {/* Header */}
       <div className="flex items-end justify-between mb-7">
         <div>
