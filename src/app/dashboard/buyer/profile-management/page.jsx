@@ -2,6 +2,7 @@
 
 import { useSession } from '@/lib/auth-client';
 import { authClient } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast'
 import {
@@ -12,9 +13,16 @@ import {
 const API = "http://localhost:5000";
 
 const ProfileManagePage = () => {
-  // ✅ FIX: hook called inside the component, as a function
   const { data: session, isPending } = useSession();
   const user = session?.user;
+  const router = useRouter();
+
+  // ── Private route guard: push to sign-in once we know there's no user ──
+  useEffect(() => {
+    if (!isPending && !user) {
+      router.push("/sign-in");
+    }
+  }, [isPending, user, router]);
 
   // ── Personal info state ────────────────────────────────────────────
   const [profile, setProfile] = useState({
@@ -73,7 +81,6 @@ const ProfileManagePage = () => {
 
     setSavingInfo(true);
     try {
-      // ✅ Same pattern as products edit — target by id in the URL, not by email
       const res = await fetch(`${API}/api/profile/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -129,19 +136,11 @@ const ProfileManagePage = () => {
     }
   };
 
-  // ── Loading / unauthenticated states ────────────────────────────────
-  if (isPending) {
+  // ── Loading state (also covers the moment before redirect fires) ──────
+  if (isPending || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <span className="loading loading-spinner loading-lg text-emerald-600" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <p className="text-gray-500 text-sm">Please sign in to manage your profile.</p>
       </div>
     );
   }
