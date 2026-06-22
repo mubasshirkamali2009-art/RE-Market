@@ -3,6 +3,7 @@ import React, { useEffect, useState, useSyncExternalStore } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import BuyNowButton from "@/components/BuyNowButton";
 import {
   Heart,
   ShoppingCart,
@@ -345,27 +346,11 @@ export default function ProductDetailPage() {
                   </h1>
                 </div>
 
-                <motion.button
-                  onClick={toggleWishlist}
-                  whileTap={{ scale: 0.8 }}
-                  whileHover={{ scale: 1.12 }}
-                  initial={{ opacity: 0, rotate: -15 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  transition={{ delay: 0.25, type: "spring", stiffness: 260 }}
-                  aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                  className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <motion.span
-                    animate={wishlisted ? { scale: [1, 1.4, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.35 }}
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        wishlisted ? "fill-red-500 text-red-500" : "text-gray-400"
-                      }`}
-                    />
-                  </motion.span>
-                </motion.button>
+               <BuyNowButton
+  product={product}
+  userEmail={userEmail}
+  className="flex-1"
+/>
               </div>
 
               <motion.div
