@@ -2,6 +2,7 @@
 import { useSession } from '@/lib/auth-client';
 import React from 'react';
 import { motion } from "framer-motion";
+import ProtectedRoute from '@/components/ProtectRout';
 
 export function Spinner({ size = 24, className = "" }) {
   return (
@@ -40,10 +41,10 @@ const user = session?.user;
 console.log("Session data in buyerdata :" , session , "is pending" , isPending)
 
 
-    return (
+    return ( <ProtectedRoute>
         <div>
              <h1 className='text-5xl'>Welcome back {user.name}</h1>
-        </div>
+        </div> </ProtectedRoute>
     );
 };
 
