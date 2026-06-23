@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 // Import both from your auth file to capture the session safely
 import { useSession, authClient } from "@/lib/auth-client"; // Adjust this path to your actual auth file
 import { 
@@ -104,7 +104,8 @@ export default function AdaptiveDashboardGrid() {
   const cards = resolveCardsByRole();
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4">
+<Suspense fallback={<p>loading</p>}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4">
       {cards.map((card, idx) => {
         const IconComponent = card.icon;
         return (
@@ -120,6 +121,7 @@ export default function AdaptiveDashboardGrid() {
         );
       })}
     </div>
+</Suspense>
   );
 }
 

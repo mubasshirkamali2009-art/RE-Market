@@ -10,7 +10,7 @@ const DashboardLayout = ({children}) => {
             <DashboardSidebar></DashboardSidebar>
             <div className='flex-1'>
                 
-{/* {children} */}
+{children}
             </div>
         </div>
     );

@@ -3,7 +3,7 @@
 import { useSession } from '@/lib/auth-client';
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast'
 import {
   User, Mail, Phone, MapPin, Lock, Camera,
@@ -149,7 +149,8 @@ const ProfileManageMentClient = () => {
     .split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
+    <Suspense fallback={<p>loading</p>}>
+      <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
 
         {/* ══════════════════ LEFT: Profile Card ══════════════════ */}
@@ -366,6 +367,7 @@ const ProfileManageMentClient = () => {
         </div>
       </div>
     </div>
+    </Suspense>
   );
 };
 
