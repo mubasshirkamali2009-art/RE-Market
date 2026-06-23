@@ -2,56 +2,77 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
 import {
   ShoppingBag,
-  Search,
   LayoutGrid,
   Boxes,
   LayoutDashboard,
   ChevronDown,
   User,
-  Settings,
-  Package,
-  Heart,
   LogOut,
   Menu,
   X,
   Home,
   Sun,
   Moon,
+  Search,
 } from "lucide-react";
 import {
   CircleInfoFill,
   Handset
 } from '@gravity-ui/icons';
 
-
 export default function ReMarketNavbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mdSearchOpen, setMdSearchOpen] = useState(false); // md এবং sm এর জন্য সার্চ বার টগল স্টেট
   const [scrolled, setScrolled] = useState(false);
   const [dark, setDark] = useState(false);
-  const profileRef = useRef(null);
-  const pathname = usePathname();
-  const {data:session ,isPending} = useSession()
-  console.log("session data in Navbar:" , session , "Is pending:" , isPending)
-  const user =  session?.user;
-
-
-  const dashBoardLinks ={
-    buyer:'/dashboard/buyer' ,
-    seller:'/dashboard/seller' ,
-    admin:'/dashboard/admin'
+  useEffect(() => {
+  if (dark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
   }
+}, [dark]);
+  const profileRef = useRef(null);
+  const searchRef = useRef(null); // সার্চ বারের বাইরে ক্লিক ডিটেক্ট করার জন্য
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const { data: session, isPending } = useSession();
+  console.log("session data in Navbar:", session, "Is pending:", isPending);
+  const user = session?.user;
 
+  // Track the typed keyword value directly within the Navbar state
+  const [searchVal, setSearchVal] = useState(searchParams.get("search") || "");
 
+  // Sync state if browser URL parameters shift anywhere else
+  useEffect(() => {
+    setSearchVal(searchParams.get("search") || "");
+  }, [searchParams]);
 
+  // Handle URL updates automatically when user types inside the inline inputs
+  const handleSearchChange = (value) => {
+    setSearchVal(value);
+    if (value.trim()) {
+      router.push(`/products?search=${encodeURIComponent(value)}`);
+    } else {
+      router.push("/products");
+    }
+  };
+
+  // প্রোফাইল এবং সার্চ ড্রপডাউনের বাইরে ক্লিক করলে বন্ধ হওয়ার লজিক
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setMdSearchOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -66,13 +87,6 @@ export default function ReMarketNavbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Each link has a real route. Active state is derived from the current
-  // URL (pathname) via usePathname — not local click state — so whichever
-  // page you're actually on lights up automatically, even on direct load,
-  // refresh, or back/forward navigation.
-
-  // Dashboard route is dynamic based on the logged-in user's role:
-  // /dashboard/buyer, /dashboard/seller, or /dashboard/admin.
   const dashboardHref = user?.role ? `/dashboard/${user.role}` : "/dashboard";
 
   const navLinks = [
@@ -80,31 +94,22 @@ export default function ReMarketNavbar() {
     { label: "Products", href: "/products", icon: Boxes },
     { label: "Categories", href: "/categories", icon: LayoutGrid },
     { label: "Dashboard", href: dashboardHref, icon: LayoutDashboard },
-    { label: "About us", href: "/about-us", icon: CircleInfoFill }, // ✅ Fixed!
-    { label: "Contact us", href: "/contact-us" , icon: Handset },
+    { label: "About us", href: "/about-us", icon: CircleInfoFill },
+    { label: "Contact us", href: "/contact-us", icon: Handset },
   ];
 
-  // "/" only matches exactly. Other routes match their own path and any
-  // nested sub-path, e.g. "/products" stays active on "/products/123".
   function isLinkActive(href) {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(href + "/");
   }
 
-
-  const {} =useSession()
-
   const handleLogout = async () => {
-      setProfileOpen(false)
-      await authClient.signOut()
-      window.location.reload()
-  }
+    setProfileOpen(false);
+    await authClient.signOut();
+    window.location.reload();
+  };
 
   return (
-
-
-
-
     <div className={dark ? "dark" : ""}>
       <div
         className="font-sans transition-colors duration-300"
@@ -161,8 +166,6 @@ export default function ReMarketNavbar() {
                 })}
               </div>
 
-              
-
               {/* Tablet nav — md only, icon-only compact pills */}
               <div className="hidden md:flex lg:hidden items-center gap-1">
                 {navLinks.map((link) => {
@@ -185,21 +188,50 @@ export default function ReMarketNavbar() {
                 })}
               </div>
 
-              {/* Search — lg and up */}
-              <div className="hidden lg:flex items-center relative group">
+              {/* ── DESKTOP SEARCH INPUT FIELD (lg and up) ── */}
+              <div className="hidden lg:flex items-center relative group w-40 xl:w-56">
                 <Search
                   size={16}
                   className="absolute left-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-600 transition-colors"
                 />
                 <input
                   type="text"
+                  value={searchVal}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   placeholder="Search listings..."
-                  className="text-sm rounded-full pl-10 pr-4 py-2.5 w-40 xl:w-56 bg-slate-100/80 dark:bg-white/5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none border border-transparent focus:border-emerald-500/40 focus:bg-white dark:focus:bg-white/10 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200"
+                  className="w-full text-sm rounded-full pl-10 pr-4 py-2.5 bg-slate-100/80 dark:bg-white/5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none border border-transparent focus:border-emerald-500/40 focus:bg-white dark:focus:bg-white/10 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200"
                 />
               </div>
 
-              {/* Right cluster — login button and profile dropdown both shown, hardcoded */}
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Right cluster — login button, theme toggle, and profile */}
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0 relative" ref={searchRef}>
+                
+                {/* ── NEW: SEARCH ICON FOR md AND sm SCREEN ── */}
+                <button
+                  onClick={() => setMdSearchOpen((prev) => !prev)}
+                  aria-label="Toggle search"
+                  className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-200"
+                >
+                  {mdSearchOpen ? <X size={18} strokeWidth={2} /> : <Search size={18} strokeWidth={2} />}
+                </button>
+
+                {/* md/sm Search Dropdown Content */}
+                {mdSearchOpen && (
+                  <div className="absolute right-0 top-12 z-50 w-64 sm:w-80 p-2 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-100 dark:border-white/10 animate-[fadeIn_0.15s_ease-out] lg:hidden">
+                    <div className="relative w-full group">
+                      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchVal}
+                        autoFocus
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        placeholder="Search listings..."
+                        className="w-full text-sm rounded-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none border border-transparent focus:border-emerald-500/40 focus:bg-white dark:focus:bg-white/10 focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Dark mode toggle */}
                 <button
                   onClick={() => setDark((d) => !d)}
@@ -209,78 +241,74 @@ export default function ReMarketNavbar() {
                   {dark ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
                 </button>
 
-           {  user ?
-                <>
-                 <div className="relative" ref={profileRef}>
-                  <button
-                    onClick={() => setProfileOpen((o) => !o)}
-                    className={`flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full transition-colors duration-200 ${
-                      profileOpen ? "bg-slate-100 dark:bg-white/10" : "hover:bg-slate-100 dark:hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs font-bold text-white bg-gradient-to-br from-emerald-600 to-green-700 ring-2 ring-white dark:ring-slate-900">
-                     <div className="avatar">
-  <div className="ring-primary ring-offset-base-100 w-10 rounded-full ring-2 ring-offset-2">
-    <img  src={user?.image}/>
-  </div>
-</div>
-                    </span>
-                    <ChevronDown
-                      size={14}
-                      className={`text-slate-400 dark:text-slate-500 hidden sm:block transition-transform duration-200 ${
-                        profileOpen ? "rotate-180" : ""
+                {user ? (
+                  <div className="relative" ref={profileRef}>
+                    <button
+                      onClick={() => setProfileOpen((o) => !o)}
+                      className={`flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full transition-colors duration-200 ${
+                        profileOpen ? "bg-slate-100 dark:bg-white/10" : "hover:bg-slate-100 dark:hover:bg-white/5"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-xs font-bold text-white bg-gradient-to-br from-emerald-600 to-green-700 ring-2 ring-white dark:ring-slate-900">
+                        <div className="avatar">
+                          <div className="ring-primary ring-offset-base-100 w-10 rounded-full ring-2 ring-offset-2">
+                            <img src={user?.image || ""} alt="user profile" />
+                          </div>
+                        </div>
+                      </span>
+                      <ChevronDown
+                        size={14}
+                        className={`text-slate-400 dark:text-slate-500 hidden sm:block transition-transform duration-200 ${
+                          profileOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
 
-                  {profileOpen && (
-                    <div className="absolute right-0 mt-2.5 w-60 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/40 border border-slate-100 dark:border-white/10 animate-[fadeIn_0.15s_ease-out]">
-                      <div className="px-4 py-3.5 bg-gradient-to-br from-emerald-50 to-green-50/50 dark:from-emerald-500/10 dark:to-green-500/5 border-b border-slate-100 dark:border-white/10">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{user?.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+                    {profileOpen && (
+                      <div className="absolute right-0 mt-2.5 w-60 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 shadow-xl shadow-slate-900/10 dark:shadow-black/40 border border-slate-100 dark:border-white/10 animate-[fadeIn_0.15s_ease-out]">
+                        <div className="px-4 py-3.5 bg-gradient-to-br from-emerald-50 to-green-50/50 dark:from-emerald-500/10 dark:to-green-500/5 border-b border-slate-100 dark:border-white/10">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{user?.name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
+                        </div>
+                        <div className="py-1.5">
+                          <Link
+                            href="/my-profile"
+                            onClick={() => setProfileOpen(false)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 text-left"
+                          >
+                            <User size={16} className="text-slate-400 dark:text-slate-500" />
+                            My Profile
+                          </Link>
+                        </div>
+                        <div className="py-1.5 border-t border-slate-100 dark:border-white/10">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
+                          >
+                            <LogOut size={16} />
+                            Log out
+                          </button>
+                        </div>
                       </div>
-                      <div className="py-1.5">
-                        <Link
-                          href="/my-profile"
-                          onClick={() => setProfileOpen(false)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors duration-150 text-left"
-                        >
-                          <User size={16} className="text-slate-400 dark:text-slate-500" />
-                          My Profile
-                        </Link>
-                      </div>
-                      <div className="py-1.5 border-t border-slate-100 dark:border-white/10">
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
-                        >
-                          <LogOut size={16} />
-                          Log out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                </> :
-                <>
-                <div className="hidden sm:flex items-center gap-2">
-                  <Link
-                    href="/sign-in"
-                    className="text-sm font-medium px-4 py-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    href="/sign-up"
-                    className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                  >
-                    Sign up
-                  </Link>
-                </div>
-                </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Link
+                      href="/sign-in"
+                      className="text-sm font-medium px-4 py-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors duration-200"
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      href="/sign-up"
+                      className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                    >
+                      Sign up
+                    </Link>
+                  </div>
+                )}
 
-               
-}
                 {/* Mobile menu toggle — below md */}
                 <button
                   className="md:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-200"
@@ -292,21 +320,14 @@ export default function ReMarketNavbar() {
             </div>
           </div>
 
-          {/* Mobile / small-tablet dropdown — below md */}
+          {/* Mobile dropdown — below md */}
           <div
             className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
-              mobileOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0"
+              mobileOpen ? "max-h-[460px] opacity-100" : "max-h-0 opacity-0"
             }`}
           >
             <div className="px-4 sm:px-6 pb-4 flex flex-col gap-1 border-t border-slate-100 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl">
-              <div className="relative mt-3 mb-1">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search listings..."
-                  className="text-sm rounded-full pl-10 pr-4 py-3 w-full bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                />
-              </div>
+             
 
               {navLinks.map((link) => {
                 const isActive = isLinkActive(link.href);
@@ -328,41 +349,34 @@ export default function ReMarketNavbar() {
                 );
               })}
 
-              {/* Login / Register — hardcoded, always visible in mobile menu too, navigates on click */}
-              
-               { user ? <>
-               
-               
-               <div className="w-full">
-                <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-lg  
-                          
-                          flex justify-center
-                          
-                          font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
-                        >
-                          <LogOut size={16} />
-                          Log out
-                        </button>
-               </div>
-               </>  : 
-               <> <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-white/10"> 
-               <Link
-                  href="/sign-in"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center text-sm font-medium px-4 py-3 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center text-sm font-semibold px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm"
-                >
-                  Sign up
-                </Link>  </div> </>}
-             
+              {user ? (
+                <div className="w-full">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-lg justify-center font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors duration-150 text-left"
+                  >
+                    <LogOut size={16} />
+                    Log out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex-1 text-center text-sm font-medium px-4 py-3 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex-1 text-center text-sm font-semibold px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 text-white shadow-sm"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </nav>

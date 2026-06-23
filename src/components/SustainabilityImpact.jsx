@@ -8,28 +8,29 @@ const IMPACT_STATS = [
     label: "Waste reduced",
     value: "1,250 KG",
     icon: "🌱",
-    gradient: "from-emerald-400/20 via-emerald-400/5 to-white",
+    // ডার্ক মোডের জন্য আলাদা গ্রেডিয়েন্ট ক্লাস কনফিগার করা হলো
+    gradient: "from-emerald-400/20 via-emerald-400/5 to-white dark:to-slate-900",
   },
   {
     id: 2,
     label: "Products reused",
     value: "3,500+",
     icon: "♻️",
-    gradient: "from-green-400/20 via-green-400/5 to-white",
+    gradient: "from-green-400/20 via-green-400/5 to-white dark:to-slate-900",
   },
   {
     id: 3,
     label: "CO₂ emissions saved",
     value: "820 KG",
     icon: "🌍",
-    gradient: "from-teal-400/20 via-teal-400/5 to-white",
+    gradient: "from-teal-400/20 via-teal-400/5 to-white dark:to-slate-900",
   },
   {
     id: 4,
     label: "Sustainable purchases",
     value: "2,100+",
     icon: "🛍️",
-    gradient: "from-emerald-500/20 via-emerald-400/5 to-white",
+    gradient: "from-emerald-500/20 via-emerald-400/5 to-white dark:to-slate-900",
   },
 ];
 
@@ -60,7 +61,8 @@ const COMPARISON_CARDS = [
 
 export default function SustainabilityImpact() {
   return (
-    <div className="w-full bg-gradient-to-br from-[#EBF5EE] via-[#F3FAF6] to-[#E5F2E9] py-12 px-4 sm:px-6 md:px-12 relative overflow-hidden font-sans min-h-screen flex items-center justify-center">
+    // মূল ব্যাকগ্রাউন্ডে ডার্ক মোড সেট করা হলো
+    <div className="w-full bg-gradient-to-br from-[#EBF5EE] via-[#F3FAF6] to-[#E5F2E9] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-12 px-4 sm:px-6 md:px-12 relative overflow-hidden font-sans min-h-screen flex items-center justify-center transition-colors duration-300">
       
       {/* Background Graphic Blobs & Abstract UI Presentation Accents */}
       <div className="absolute top-10 left-1/4 w-4 h-4 bg-emerald-400/40 rounded-full" />
@@ -69,23 +71,23 @@ export default function SustainabilityImpact() {
       <div className="absolute top-6 right-[12%] w-16 h-16 bg-[#2C6B4F]/5 rounded-full" />
       
       {/* Floating Canvas UI Element Badges */}
-      <div className="absolute top-12 right-1/4 bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white text-xl hidden lg:block">🌱</div>
-      <div className="absolute top-44 right-[10%] bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white text-xl hidden lg:block">♻️</div>
-      <div className="absolute top-[28%] right-[8%] bg-white/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white text-base hidden lg:block">⚙️</div>
+      <div className="absolute top-12 right-1/4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white dark:border-slate-700 text-xl hidden lg:block">🌱</div>
+      <div className="absolute top-44 right-[10%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white dark:border-slate-700 text-xl hidden lg:block">♻️</div>
+      <div className="absolute top-[28%] right-[8%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-2.5 rounded-full shadow-sm border border-white dark:border-slate-700 text-base hidden lg:block">⚙️</div>
 
       {/* Main Presentation White Inner Panel Shell */}
-      <section className="w-full max-w-7xl bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[40px] shadow-xl p-6 sm:p-10 md:p-12 relative z-10">
+      <section className="w-full max-w-7xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/80 dark:border-slate-800 rounded-[40px] shadow-xl p-6 sm:p-10 md:p-12 relative z-10 transition-colors duration-300">
         
         {/* Brand & Main Centered Hero Heading */}
         <div className="relative mb-12">
-          <div className="absolute top-0 left-0 font-extrabold text-xl text-[#2C6B4F] tracking-tight select-none">
+          <div className="absolute top-0 left-0 font-extrabold text-xl text-[#2C6B4F] dark:text-emerald-400 tracking-tight select-none">
             ReSell Hub
           </div>
           <div className="text-center pt-8 md:pt-4">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#13231B] tracking-tight mb-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#13231B] dark:text-white tracking-tight mb-3">
               Sustainability Impact
             </h1>
-            <p className="text-gray-600 text-xs sm:text-sm md:text-base font-medium max-w-xl mx-auto leading-relaxed">
+            <p className="text-gray-600 dark:text-slate-400 text-xs sm:text-sm md:text-base font-medium max-w-xl mx-auto leading-relaxed">
               See how every second-hand purchase helps reduce waste and protect our planet.
             </p>
           </div>
@@ -99,16 +101,16 @@ export default function SustainabilityImpact() {
             {IMPACT_STATS.map((stat) => (
               <div
                 key={stat.id}
-                className={`p-5 rounded-2xl border border-white bg-gradient-to-br ${stat.gradient} bg-white shadow-sm flex flex-col justify-between h-[135px] transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}
+                className={`p-5 rounded-2xl border border-white dark:border-slate-800 bg-gradient-to-br ${stat.gradient} bg-white dark:bg-slate-900 shadow-sm flex flex-col justify-between h-[135px] transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}
               >
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center text-lg border border-emerald-50/50">
+                <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-lg border border-emerald-50/50 dark:border-slate-700">
                   {stat.icon}
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 capitalize tracking-tight">
+                  <p className="text-[10px] font-bold text-gray-400 dark:text-slate-400 capitalize tracking-tight">
                     {stat.label}
                   </p>
-                  <h3 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight mt-0.5">
+                  <h3 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-slate-100 tracking-tight mt-0.5">
                     {stat.value}
                   </h3>
                   <span className="text-[8px] text-gray-300 block font-medium mt-0.5"></span>
@@ -126,7 +128,7 @@ export default function SustainabilityImpact() {
               <div className="absolute inset-6 border border-dotted border-green-500/10 rounded-full animate-spin" style={{ animationDuration: '25s' }} />
 
               {/* Central Eco Globe Centerpiece Illustration */}
-              <div className="w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-emerald-400 via-emerald-300 to-sky-300 shadow-inner flex items-center justify-center text-6xl relative z-10 border border-white/60">
+              <div className="w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-emerald-400 via-emerald-300 to-sky-300 shadow-inner flex items-center justify-center text-6xl relative z-10 border border-white/60 dark:border-slate-700">
                 🌍
                 {/* Embedded Loop Overlay Layer */}
                 <div className="absolute inset-0 bg-emerald-600/5 rounded-full mix-blend-overlay" />
@@ -149,10 +151,10 @@ export default function SustainabilityImpact() {
           </div>
 
           {/* Right Column Content Zone: Flow Chart Visual Connection Module */}
-          <div className="lg:col-span-4 bg-transparent border border-white/40 rounded-3xl p-6 flex flex-col justify-between h-auto lg:h-[288px] w-full relative">
+          <div className="lg:col-span-4 bg-transparent border border-white/40 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between h-auto lg:h-[288px] w-full relative">
             <div className="mb-8 lg:mb-0">
-              <h3 className="text-xl font-black text-gray-900 tracking-tight">Impact</h3>
-              <p className="text-xs font-semibold text-gray-400 mt-1 leading-normal">
+              <h3 className="text-xl font-black text-gray-900 dark:text-slate-100 tracking-tight">Impact</h3>
+              <p className="text-xs font-semibold text-gray-400 dark:text-slate-400 mt-1 leading-normal">
                 Beautiful infographic timeline connected with modern arrows.
               </p>
             </div>
@@ -163,18 +165,18 @@ export default function SustainabilityImpact() {
                 <div key={idx} className="flex flex-col items-center text-center relative flex-1">
                   
                   {/* Step Graphical Vector Bullet Node */}
-                  <div className="w-9 h-9 rounded-full bg-white shadow-sm border border-emerald-50 flex items-center justify-center text-sm relative z-10 transition-transform hover:scale-105">
+                  <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-emerald-50 dark:border-slate-700 flex items-center justify-center text-sm relative z-10 transition-transform hover:scale-105">
                     {step.icon}
                   </div>
                   
                   {/* Step Segment Header Label */}
-                  <p className="text-[9px] sm:text-[11px] font-bold text-gray-700 tracking-tight mt-2.5 leading-tight max-w-[56px] mx-auto">
+                  <p className="text-[9px] sm:text-[11px] font-bold text-gray-700 dark:text-slate-300 tracking-tight mt-2.5 leading-tight max-w-[56px] mx-auto">
                     {step.label}
                   </p>
 
                   {/* Connected Arrow Graphic Separator Segment links */}
                   {idx < TIMELINE_STEPS.length - 1 && (
-                    <div className="absolute left-[calc(50%+16px)] top-4.5 w-[calc(100%-32px)] h-0.5 flex items-center justify-center z-0 select-none pointer-events-none opacity-40 text-emerald-600 text-xs font-bold">
+                    <div className="absolute left-[calc(50%+16px)] top-4.5 w-[calc(100%-32px)] h-0.5 flex items-center justify-center z-0 select-none pointer-events-none opacity-40 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
                       →
                     </div>
                   )}
@@ -186,27 +188,26 @@ export default function SustainabilityImpact() {
         </div>
 
         {/* Bottom Panel Block Row Layer: Impact Comparisons Blocks */}
-        <div className="pt-6 border-t border-gray-100/50">
-          <h2 className="text-xl font-black text-gray-900 tracking-tight mb-6">
+        <div className="pt-6 border-t border-gray-100/50 dark:border-slate-800">
+          <h2 className="text-xl font-black text-gray-900 dark:text-slate-100 tracking-tight mb-6">
             Impact comparison
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {COMPARISON_CARDS.map((card, index) => {
-              // Parse out the sentence structures to match design styling variations cleanly
               const baseText = card.title.replace(card.highlight, "");
               
               return (
                 <div
                   key={index}
-                  className="p-5 sm:p-6 rounded-2xl border border-white bg-white/40 shadow-sm flex flex-col justify-between hover:bg-white/80 hover:shadow-md transition-all duration-300 min-h-[125px]"
+                  className="p-5 sm:p-6 rounded-2xl border border-white dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 shadow-sm flex flex-col justify-between hover:bg-white/80 dark:hover:bg-slate-900 transition-all duration-300 min-h-[125px]"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50/50 border border-emerald-100/40 flex items-center justify-center text-base mb-4 shrink-0 select-none">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50/50 dark:bg-slate-800 border border-emerald-100/40 dark:border-slate-700 flex items-center justify-center text-base mb-4 shrink-0 select-none">
                     {card.icon}
                   </div>
-                  <p className="text-gray-500 text-xs sm:text-sm font-semibold leading-relaxed tracking-tight">
+                  <p className="text-gray-500 dark:text-slate-400 text-xs sm:text-sm font-semibold leading-relaxed tracking-tight">
                     {baseText}
-                    <span className="text-gray-900 font-black block md:inline">{card.highlight}</span>
+                    <span className="text-gray-900 dark:text-slate-100 font-black block md:inline">{card.highlight}</span>
                   </p>
                   <span className="text-[8px] text-gray-300 block font-medium mt-2"></span>
                 </div>
@@ -216,7 +217,7 @@ export default function SustainabilityImpact() {
         </div>
 
         {/* Bottom Horizontal Highlight Accent Status Badge List Row */}
-        <div className="flex flex-wrap gap-x-8 gap-y-2 justify-center lg:justify-start items-center mt-10 pt-4 border-t border-gray-100/30 text-gray-400 font-bold text-[11px] uppercase tracking-wider">
+        <div className="flex flex-wrap gap-x-8 gap-y-2 justify-center lg:justify-start items-center mt-10 pt-4 border-t border-gray-100/30 dark:border-slate-800 text-gray-400 dark:text-slate-500 font-bold text-[11px] uppercase tracking-wider">
           <div className="flex items-center gap-1.5"><span className="text-emerald-500 text-sm">✓</span> Impact comparison</div>
           <div className="flex items-center gap-1.5"><span className="text-emerald-500 text-sm">✓</span> Eco-friendly infographic</div>
           <div className="flex items-center gap-1.5"><span className="text-emerald-500 text-sm">✓</span> Premium dashboard aesthetics</div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductsTable } from "@/components/MyProducts";
-import { ProductSearch } from "@/components/search";
+import { ProductSearch } from "@/components/ProductSearch";
 import { EditProductModal } from "@/components/Edit";
 import { DeleteProductDialog } from "@/components/Delete";
 import ProtectedRoute from "@/components/ProtectRout";

@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Package, Store, Calendar, Trash2, AlertCircle, Layers, Tag, Info } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 export default function AdminManageProductsPage() {
   const [products, setProducts] = useState([]);

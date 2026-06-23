@@ -17,14 +17,14 @@ const ProfileManagePage = () => {
   const user = session?.user;
   const router = useRouter();
 
-  // ── Private route guard: push to sign-in once we know there's no user ──
+  // ── Private route guard ──
   useEffect(() => {
     if (!isPending && !user) {
       router.push("/sign-in");
     }
   }, [isPending, user, router]);
 
-  // ── Personal info state ────────────────────────────────────────────
+  // ── Personal info state ──
   const [profile, setProfile] = useState({
     name: "",
     image: "",
@@ -33,7 +33,7 @@ const ProfileManagePage = () => {
   });
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // ── Password state ─────────────────────────────────────────────────
+  // ── Password state ──
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,23 +42,28 @@ const ProfileManagePage = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // ── Show session data immediately (name/image from Google login) ───
+  // ── Sync session data safely without infinite cascading loops ──
   useEffect(() => {
     if (!user) return;
-    setProfile((p) => ({
-      ...p,
-      name:  p.name  || user.name  || "",
-      image: p.image || user.image || "",
-    }));
+    setProfile((p) => {
+      const nextName = p.name || user.name || "";
+      const nextImage = p.image || user.image || "";
+      if (p.name !== nextName || p.image !== nextImage) {
+        return { ...p, name: nextName, image: nextImage };
+      }
+      return p;
+    });
   }, [user?.name, user?.image]);
 
-  // ── Load saved profile from backend (phone/address/overrides) ───────
+  // ── Load saved profile from backend ──
   useEffect(() => {
     if (!user?.id) return;
+
+    let isMounted = true;
     fetch(`${API}/api/profile/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
-        if (data?.error) return; // not found yet, keep session defaults
+        if (!isMounted || !data || data.error) return;
         setProfile((p) => ({
           name:    data.name    || p.name    || "",
           image:   data.image   || p.image   || "",
@@ -66,15 +71,21 @@ const ProfileManagePage = () => {
           address: data.address || "",
         }));
       })
-      .catch(() => toast.error("Could not load profile details."));
+      .catch(() => {
+        if (isMounted) toast.error("Could not load profile details.");
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
-  // ── Profile completeness (simple heuristic) ────────────────────────
+  // ── Profile completeness ──
   const fields = [profile.name, profile.image, profile.phone, profile.address];
   const filledCount = fields.filter((f) => f && f.trim().length > 0).length;
   const completePercent = Math.round((filledCount / fields.length) * 100);
 
-  // ── Save personal info ──────────────────────────────────────────────
+  // ── Save personal info ──
   const handleSaveInfo = async (e) => {
     e.preventDefault();
     if (!user?.id) return toast.error("You must be signed in.");
@@ -100,7 +111,7 @@ const ProfileManagePage = () => {
     }
   };
 
-  // ── Change password ─────────────────────────────────────────────────
+  // ── Change password ──
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -118,9 +129,7 @@ const ProfileManagePage = () => {
       });
 
       if (error) {
-        const msg =
-          error.code === "INVALID_PASSWORD" ? "Current password is incorrect." :
-          error.message ?? "Failed to update password.";
+        const msg = error.code === "INVALID_PASSWORD" ? "Current password is incorrect." : error.message ?? "Failed to update password.";
         toast.error(msg);
         return;
       }
@@ -136,7 +145,6 @@ const ProfileManagePage = () => {
     }
   };
 
-  // ── Loading state (also covers the moment before redirect fires) ──────
   if (isPending || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -152,10 +160,9 @@ const ProfileManagePage = () => {
     <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
 
-        {/* ══════════════════ LEFT: Profile Card ══════════════════ */}
+        {/* LEFT CARD */}
         <div className="space-y-4">
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 text-center">
-            {/* Avatar */}
             <div className="relative w-24 h-24 mx-auto mb-4">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-emerald-100 flex items-center justify-center">
                 {(profile.image || user.image) ? (
@@ -182,7 +189,6 @@ const ProfileManagePage = () => {
               Verified Account
             </div>
 
-            {/* Profile completeness */}
             <div className="mt-5 text-left">
               <div className="flex items-center justify-between text-xs font-semibold text-gray-500 mb-1.5">
                 <span>Profile Complete</span>
@@ -197,7 +203,6 @@ const ProfileManagePage = () => {
             </div>
           </div>
 
-          {/* Help card */}
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
             <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm mb-1.5">
               <HelpCircle size={16} />
@@ -212,10 +217,8 @@ const ProfileManagePage = () => {
           </div>
         </div>
 
-        {/* ══════════════════ RIGHT: Forms ══════════════════ */}
+        {/* RIGHT FORMS */}
         <div className="space-y-6">
-
-          {/* ── Personal Information ───────────────────────────── */}
           <form onSubmit={handleSaveInfo} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
             <div className="flex items-start gap-2 mb-6">
               <User size={18} className="text-emerald-600 mt-0.5" />
@@ -226,7 +229,6 @@ const ProfileManagePage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Full name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Full Name</label>
                 <div className="relative">
@@ -241,7 +243,6 @@ const ProfileManagePage = () => {
                 </div>
               </div>
 
-              {/* Email (read-only) */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Address</label>
                 <div className="relative">
@@ -254,7 +255,6 @@ const ProfileManagePage = () => {
                 </div>
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Phone Number</label>
                 <div className="relative">
@@ -269,7 +269,6 @@ const ProfileManagePage = () => {
                 </div>
               </div>
 
-              {/* Profile image URL */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Profile Image URL</label>
                 <div className="relative">
@@ -284,7 +283,6 @@ const ProfileManagePage = () => {
                 </div>
               </div>
 
-              {/* Address — full width */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Address</label>
                 <div className="relative">
@@ -312,7 +310,7 @@ const ProfileManagePage = () => {
             </div>
           </form>
 
-          {/* ── Change Password ────────────────────────────────── */}
+          {/* PASSWORD CHANGE FORM */}
           <form onSubmit={handleChangePassword} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
             <div className="flex items-start gap-2 mb-6">
               <Lock size={18} className="text-emerald-600 mt-0.5" />
@@ -355,21 +353,20 @@ const ProfileManagePage = () => {
                 disabled={savingPassword}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60 text-white text-sm font-semibold transition-all"
               >
-                {savingPassword
-                  ? <><span className="loading loading-spinner loading-xs" /> Updating…</>
-                  : <><ShieldCheck size={16} /> Update Password</>
-                }
+                {savingPassword ? (
+                  <><span className="loading loading-spinner loading-xs" /> Updating…</>
+                ) : (
+                  <><ShieldCheck size={16} /> Update Password</>
+                )}
               </button>
             </div>
           </form>
-
         </div>
       </div>
     </div>
   );
 };
 
-// ── Reusable password input with show/hide toggle ──────────────────────
 function PasswordField({ label, value, onChange, show, onToggle, placeholder }) {
   return (
     <div>
@@ -387,7 +384,6 @@ function PasswordField({ label, value, onChange, show, onToggle, placeholder }) 
           type="button"
           onClick={onToggle}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          aria-label={show ? "Hide password" : "Show password"}
         >
           {show ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>

@@ -20,7 +20,7 @@ import { useSession } from "@/lib/auth-client";
 // =====================================================
 // CONFIG
 // =====================================================
-const API_BASE = "http://localhost:5000";
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 function formatPrice(n) {
   return `৳ ${Number(n || 0).toLocaleString("en-US")}`;

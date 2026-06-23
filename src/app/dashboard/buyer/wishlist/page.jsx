@@ -9,7 +9,7 @@ import { useSession } from "@/lib/auth-client";
 // =====================================================
 // CONFIG
 // =====================================================
-const API_BASE = "http://localhost:5000";
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 // FIXED: no more hardcoded CURRENT_USER_EMAIL. This page now reads the
 // real logged-in user's email from the session — same as ProductsPage,
 // ProductDetailPage, and CartPage. The hardcoded constant was why every

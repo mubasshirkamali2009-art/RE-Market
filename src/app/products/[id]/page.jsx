@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 function formatPrice(n) {
   return `৳ ${Number(n).toLocaleString("en-US")}`;

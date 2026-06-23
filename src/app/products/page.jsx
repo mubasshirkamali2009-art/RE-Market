@@ -9,7 +9,7 @@ import { useSession } from "@/lib/auth-client";
 // =====================================================
 // CONFIG
 // =====================================================
-const API_BASE = "http://localhost:5000"; // change to your live API URL
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`; // change to your live API URL
 
 const CATEGORIES = [
   "Phones",
@@ -129,12 +129,13 @@ function ProductsPageContent() {
   const [cartIds, setCartIds] = useState(new Set());
 
   // filters
-  const [search, setSearch] = useState("");
- const categoryParam = searchParams.get("category");
+  const searchParam = searchParams.get("search") || "";
+  const categoryParam = searchParams.get("category");
 
-const [selectedCategories, setSelectedCategories] = useState(() =>
-  categoryParam ? new Set([categoryParam]) : new Set()
-);
+  const [search, setSearch] = useState(() => searchParam);
+  const [selectedCategories, setSelectedCategories] = useState(() =>
+    categoryParam ? new Set([categoryParam]) : new Set()
+  );
   const [selectedConditions, setSelectedConditions] = useState(new Set());
   const [priceMin, setPriceMin] = useState(0);
   const [priceMax, setPriceMax] = useState(100000);
@@ -143,16 +144,21 @@ const [selectedCategories, setSelectedCategories] = useState(() =>
   const [page, setPage] = useState(1);
 
   // -----------------------------------------------------
-  // Keep the category filter in sync with the URL.
-  // Covers both the initial load (coming from a category card)
-  // and clicking a different category while already on this page.
+  // Keep the filters in sync with the URL parameters.
   // -----------------------------------------------------
-const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
-if (categoryParam !== prevCategoryParam) {
-  setPrevCategoryParam(categoryParam);
-  setSelectedCategories(categoryParam ? new Set([categoryParam]) : new Set());
-  setPage(1);
-}
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+  if (categoryParam !== prevCategoryParam) {
+    setPrevCategoryParam(categoryParam);
+    setSelectedCategories(categoryParam ? new Set([categoryParam]) : new Set());
+    setPage(1);
+  }
+
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParam);
+  if (searchParam !== prevSearchParam) {
+    setPrevSearchParam(searchParam);
+    setSearch(searchParam);
+    setPage(1);
+  }
 
   // -----------------------------------------------------
   // Fetch products
@@ -177,11 +183,10 @@ if (categoryParam !== prevCategoryParam) {
   }, []);
 
   // -----------------------------------------------------
-  // Fetch user's existing wishlist so hearts render correctly on load
+  // Fetch user's existing wishlist
   // -----------------------------------------------------
   useEffect(() => {
     if (!userEmail) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing local UI state on logout, not an external sync
       setWishlistIds(new Set());
       return;
     }
@@ -202,13 +207,10 @@ if (categoryParam !== prevCategoryParam) {
   }, [userEmail]);
 
   // -----------------------------------------------------
-  // Fetch user's existing cart so "Added" state renders correctly on
-  // load — this is what makes a product already-carded on this page
-  // also show as carded on the product detail page, and vice versa.
+  // Fetch user's existing cart
   // -----------------------------------------------------
   useEffect(() => {
     if (!userEmail) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing local UI state on logout, not an external sync
       setCartIds(new Set());
       return;
     }
@@ -229,7 +231,7 @@ if (categoryParam !== prevCategoryParam) {
   }, [userEmail]);
 
   // -----------------------------------------------------
-  // Wishlist toggle — click heart ON adds, click again removes
+  // Wishlist toggle
   // -----------------------------------------------------
   async function toggleWishlist(product) {
     if (!userEmail) {
@@ -241,7 +243,6 @@ if (categoryParam !== prevCategoryParam) {
     const productId = product._id;
     const isWishlisted = wishlistIds.has(productId);
 
-    // optimistic UI update
     setWishlistIds((prev) => {
       const next = new Set(prev);
       isWishlisted ? next.delete(productId) : next.add(productId);
@@ -264,7 +265,6 @@ if (categoryParam !== prevCategoryParam) {
       }
     } catch (err) {
       console.error("Wishlist update failed", err);
-      // revert optimistic update on failure
       setWishlistIds((prev) => {
         const next = new Set(prev);
         isWishlisted ? next.add(productId) : next.delete(productId);
@@ -274,8 +274,7 @@ if (categoryParam !== prevCategoryParam) {
   }
 
   // -----------------------------------------------------
-  // Cart toggle — saved to backend, same pattern as wishlist.
-  // Not logged in -> toast + redirect to /sign-in, nothing is saved.
+  // Cart toggle
   // -----------------------------------------------------
   async function toggleCart(product) {
     if (!userEmail) {
@@ -287,7 +286,6 @@ if (categoryParam !== prevCategoryParam) {
     const productId = product._id;
     const isInCart = cartIds.has(productId);
 
-    // optimistic UI update
     setCartIds((prev) => {
       const next = new Set(prev);
       isInCart ? next.delete(productId) : next.add(productId);
@@ -312,7 +310,6 @@ if (categoryParam !== prevCategoryParam) {
     } catch (err) {
       console.error("Cart update failed", err);
       toast.error("Couldn't update cart, please try again");
-      // revert optimistic update on failure
       setCartIds((prev) => {
         const next = new Set(prev);
         isInCart ? next.add(productId) : next.delete(productId);
@@ -357,7 +354,11 @@ if (categoryParam !== prevCategoryParam) {
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter((p) => p.name?.toLowerCase().includes(q));
+      // Searches both product title name and product category
+      list = list.filter((p) => 
+        p.name?.toLowerCase().includes(q) || 
+        p.category?.toLowerCase().includes(q)
+      );
     }
 
     if (selectedCategories.size > 0) {
@@ -557,9 +558,22 @@ if (categoryParam !== prevCategoryParam) {
               </div>
             )}
 
+            {/* Display "Not Found" styled clean notice */}
             {!loading && !errorMsg && filteredProducts.length === 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
-                No products match your filters. Try resetting them.
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center flex flex-col items-center justify-center">
+                <div className="p-4 bg-gray-50 rounded-full text-gray-400 mb-4">
+                  <Search className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Searched item not found</h3>
+                <p className="text-sm text-gray-500 max-w-sm mb-6">
+                  We couldnt find any products matching your current search term or filters. Try adjusting your inputs.
+                </p>
+                <button
+                  onClick={resetFilters}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Clear All Filters
+                </button>
               </div>
             )}
 

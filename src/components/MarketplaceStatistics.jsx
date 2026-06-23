@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ShoppingBag, Users, Store, CheckCircle } from "lucide-react";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 const containerVariants = {
   hidden: { opacity: 0 },

@@ -6,7 +6,7 @@ import { Pencil, Xmark } from "@gravity-ui/icons";
 import { Package } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 // ── Status badge colors — same palette as your original OrdersTable ───
 const statusStyles = {

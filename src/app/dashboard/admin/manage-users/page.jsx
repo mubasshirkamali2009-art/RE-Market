@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Users, AlertCircle, Mail, Calendar, Trash2, UserCheck } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 export default function AdminManageUsersPage() {
   const [users, setUsers] = useState([]);

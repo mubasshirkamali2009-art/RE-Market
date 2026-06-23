@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSession, authClient } from "@/lib/auth-client";
 import { ShoppingBag, User, Store, AlertCircle, Calendar, CheckCircle2, Clock, XCircle } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 export default function AdminManageOrdersPage() {
   const [orders, setOrders] = useState([]);

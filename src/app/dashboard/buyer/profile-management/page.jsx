@@ -10,7 +10,7 @@ import {
   CheckCircle2, Eye, EyeOff, ShieldCheck, HelpCircle
 } from 'lucide-react';
 
-const API = "http://localhost:5000";
+const API = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 const ProfileManagePage = () => {
   const { data: session, isPending } = useSession();
