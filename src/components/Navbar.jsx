@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
@@ -110,7 +110,8 @@ export default function ReMarketNavbar() {
   };
 
   return (
-    <div className={dark ? "dark" : ""}>
+    <Suspense fallback={<p>loading</p>}>
+      <div className={dark ? "dark" : ""}>
       <div
         className="font-sans transition-colors duration-300"
         style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
@@ -382,5 +383,6 @@ export default function ReMarketNavbar() {
         </nav>
       </div>
     </div>
+    </Suspense>
   );
 }
