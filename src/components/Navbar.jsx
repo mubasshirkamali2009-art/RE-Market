@@ -24,7 +24,7 @@ import {
   Handset
 } from '@gravity-ui/icons';
 
-export default function ReMarketNavbar() {
+function ReMarketNavbarContent() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mdSearchOpen, setMdSearchOpen] = useState(false); // md এবং sm এর জন্য সার্চ বার টগল স্টেট
@@ -110,8 +110,7 @@ export default function ReMarketNavbar() {
   };
 
   return (
-    <Suspense fallback={<p>loading</p>}>
-      <div className={dark ? "dark" : ""}>
+    <div className={dark ? "dark" : ""}>
       <div
         className="font-sans transition-colors duration-300"
         style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
@@ -383,6 +382,19 @@ export default function ReMarketNavbar() {
         </nav>
       </div>
     </div>
+  );
+}
+
+export default function ReMarketNavbar() {
+  return (
+    <Suspense fallback={
+      <div className="bg-[#FAF8F0] dark:bg-slate-900 border-b border-transparent h-16 w-full animate-pulse flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+        <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded hidden md:block" />
+        <div className="h-8 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
+      </div>
+    }>
+      <ReMarketNavbarContent />
     </Suspense>
   );
 }
