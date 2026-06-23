@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductsTable } from "@/components/MyProducts";
-import { ProductSearch } from "@/components/ProductSearch";
+
 import { EditProductModal } from "@/components/Edit";
 import { DeleteProductDialog } from "@/components/Delete";
 import ProtectedRoute from "@/components/ProtectRout";
@@ -28,12 +28,12 @@ export default function MyProductsPage() {
       <div className="grid gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-[#1f4d3c]">My Products</h1>
-        <ProductSearch
+        {/* <ProductSearch
           value={searchTerm}
           onChange={setSearchTerm}
           placeholder="Search by name or category..."
           className="sm:w-72"
-        />
+        /> */}
       </div>
 
       <ProductsTable
