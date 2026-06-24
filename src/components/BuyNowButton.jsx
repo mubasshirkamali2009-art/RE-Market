@@ -63,23 +63,30 @@ export default function BuyNowButton({ product, userEmail, className = "", label
     setOpen(true);
   }
 
-  return (
+return (
     <>
-      {/* Trigger */}
-      <motion.button
-        whileHover={{ scale: isBuyer ? 1.02 : 1 }}
-        whileTap={{ scale: isBuyer ? 0.96 : 1 }}
-        onClick={handleClick}
-        aria-disabled={!isBuyer}
-        className={`inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors ${
-          isBuyer
-            ? "bg-gray-900 text-white hover:bg-gray-800"
-            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-        } ${className}`}
-      >
-        <Zap className="w-4 h-4" />
-        {label}
-      </motion.button>
+      {/* Trigger — native form, posts directly to /api/payment */}
+      <form action="/api/purchias" method="POST">
+        <input type="hidden" name="price" value={product.price} />
+        <input type="hidden" name="name" value={product.name} />
+        <input type="hidden" name="productId" value={product._id} />
+
+        <motion.button
+          type="submit"
+          whileHover={{ scale: isBuyer ? 1.02 : 1 }}
+          whileTap={{ scale: isBuyer ? 0.96 : 1 }}
+          onClick={handleClick}
+          aria-disabled={!isBuyer}
+          className={`inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors ${
+            isBuyer
+              ? "bg-gray-900 text-white hover:bg-gray-800"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+          } ${className}`}
+        >
+          <Zap className="w-4 h-4" />
+          {label}
+        </motion.button>
+      </form>
 
       {/* Modal */}
       <AnimatePresence>
