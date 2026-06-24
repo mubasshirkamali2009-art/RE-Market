@@ -66,10 +66,7 @@ export default function BuyNowButton({ product, userEmail, className = "", label
 return (
     <>
       {/* Trigger — native form, posts directly to /api/payment */}
-      <form action="/api/purchias" method="POST">
-        <input type="hidden" name="price" value={product.price} />
-        <input type="hidden" name="name" value={product.name} />
-        <input type="hidden" name="productId" value={product._id} />
+     
 
         <motion.button
           type="submit"
@@ -86,7 +83,7 @@ return (
           <Zap className="w-4 h-4" />
           {label}
         </motion.button>
-      </form>
+
 
       {/* Modal */}
       <AnimatePresence>
@@ -116,8 +113,14 @@ function BuyNowModal({ product, userEmail, onClose }) {
       : "/placeholder-product.png";
 
   async function handleConfirm() {
+
+
+
     setStep("loading");
     setError("");
+
+
+    
 
     const payload = {
       buyerInfo: {
@@ -337,16 +340,23 @@ function ConfirmStep({ product, image, userEmail, error, onConfirm, onClose }) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-2.5">
+      <div className="flex  gap-2.5">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onClose}
-          className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex-1 py-3 px-7 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
         >
           Cancel
         </motion.button>
-        <motion.button
+         <form action="/api/purchias" method="POST">
+        <input type="hidden" name="price" value={product.price} />
+        <input type="hidden" name="name" value={product.name} />
+        <input type="hidden" name="productId" value={product._id} /> 
+
+
+
+<motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onConfirm}
@@ -355,6 +365,8 @@ function ConfirmStep({ product, image, userEmail, error, onConfirm, onClose }) {
           <Zap className="w-4 h-4" />
           Place Order
         </motion.button>
+
+        </form>
       </div>
     </motion.div>
   );

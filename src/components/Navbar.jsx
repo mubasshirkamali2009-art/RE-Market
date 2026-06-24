@@ -242,7 +242,7 @@ function ReMarketNavbarContent() {
                 </button>
 
                 {user ? (
-                  <div className="relative" ref={profileRef}>
+                  <div className="relative" href={profileRef}>
                     <button
                       onClick={() => setProfileOpen((o) => !o)}
                       className={`flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-full transition-colors duration-200 ${

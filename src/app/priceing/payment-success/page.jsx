@@ -19,9 +19,50 @@ export default async function Success({ searchParams }) {
   }
 
   if (session.status === 'complete') {
-    // You can access metadata parameters you saved earlier right here:
     const productName = session.metadata?.name;
     const customerEmail = session.customer_details?.email || session.metadata?.userEmail;
+    const meta = session.metadata || {};
+
+    // ─── FIX NODE SERVER RESOLUTION URL ───
+    // Server-side parsing-er jonno target backup link strict dynamically provide kora safe:
+    const apiBase = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+
+    try {
+      // Step 1: Save the payment history snapshot record
+      const paymentResponse = await fetch(`${apiBase}/api/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stripeSessionId: session.id,
+          paymentIntentId: session.payment_intent?.id,
+          paymentStatus: session.payment_status,
+          amount: (session.amount_total || 0) / 100,
+          currency: session.currency,
+          customerEmail,
+          metadata: meta,
+        }),
+      });
+
+      // Step 2: Push Order to ordersCollections using your Express endpoint schema
+      if (meta.productId) {
+        await fetch(`${apiBase}/api/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            buyerInfo: {
+              email: customerEmail,
+              id: meta.userId || ""
+            },
+            productId: meta.productId,
+            paymentStatus: 'paid', // Mark as paid since checkout successfully validated
+            quantity: 1
+          })
+        });
+      }
+    } catch (dbError) {
+      // Backend transaction logged error logging (Component safely remains functional)
+      console.error("Database structural sync failed on page landing:", dbError);
+    }
 
     return (
       <section className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
