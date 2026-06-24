@@ -708,7 +708,7 @@ function ImageSlider({ images = [], alt }) {
       <img
         src={safeImages[index]}
         alt={alt}
-        className="w-full h-full object-cover transition-opacity duration-300"
+        className="w-full h-60 object-cover transition-opacity duration-300"
       />
       {safeImages.length > 1 && (
         <>

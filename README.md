@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ReMarket
 
-## Getting Started
+A second-hand marketplace platform where users can buy and sell pre-owned products safely and efficiently.
 
-First, run the development server:
+## 🎯 Project Purpose
+
+ReMarket helps reduce waste and promote sustainable consumption by giving people a platform to sell products they no longer need, while helping buyers find quality items at affordable prices. Sellers can list pre-owned products, buyers can browse, search, and purchase securely, and the platform supports the full flow from listing to checkout.
+
+## 🔗 Live URL
+
+[https://re-market-three.vercel.app/](https://re-market-three.vercel.app/)
+
+## ✨ Key Features
+
+- **User Authentication** — Secure sign up and login powered by Better Auth
+- **Product Listings** — Sellers can create, edit, and manage product listings with images, descriptions, condition, and price
+- **Search & Filter** — Buyers can search and filter products to quickly find what they're looking for
+- **Cart & Checkout** — Full cart management with a secure checkout flow
+- **Secure Payments** — Stripe integration for safe and reliable online payments
+- **Animated UI** — Smooth, polished interactions using Framer Motion
+- **Responsive Design** — Built with Tailwind CSS, HeroUI, and DaisyUI for a clean experience across devices
+- **Data Visualization** — Recharts-powered charts for dashboard insights
+
+## 🛠️ Tech Stack
+
+**Frontend:** Next.js
+**Backend:** Express.js
+**Database:** MongoDB (Mongoose)
+**Authentication:** Better Auth
+
+## 📦 NPM Packages Used
+
+| Package | Purpose |
+|---|---|
+| `next` | React framework for the frontend |
+| `express` | Backend server framework |
+| `mongoose` | MongoDB object modeling |
+| `better-auth` | Authentication system |
+| `stripe` | Payment processing |
+| `tailwindcss` | Utility-first CSS styling |
+| `daisyui` | Tailwind CSS component library |
+| `@heroui/react` | UI component library |
+| `framer-motion` | Animations and transitions |
+| `recharts` | Charts and data visualization |
+
+> Update this table with exact versions from your `package.json` files (client and server) before final submission.
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js installed
+- MongoDB connection string
+- Stripe API keys
+- Better Auth configuration keys
+
+### Environment Variables
+Create a `.env` file in both the client and server directories with the required keys (MongoDB URI, Better Auth secret, Stripe keys, etc.). **Never commit your `.env` file.**
+
+### Installation
 
 ```bash
+# Client
+cd client
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Server
+cd server
+npm install
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📄 License
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is for educational/assignment purposes.
