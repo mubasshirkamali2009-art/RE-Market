@@ -204,7 +204,7 @@ function ReMarketNavbarContent() {
               </div>
 
               {/* Right cluster — login button, theme toggle, and profile */}
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0 relative" ref={searchRef}>
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0 relative" href={searchRef}>
                 
                 {/* ── NEW: SEARCH ICON FOR md AND sm SCREEN ── */}
                 <button

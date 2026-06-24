@@ -16,6 +16,8 @@ import {
   Menu,
   LayoutDashboard,
   BaggageClaim
+  ,
+   History
 } from "lucide-react";
 import { Button, Drawer } from "@heroui/react";
 
@@ -34,6 +36,7 @@ const ROLE_NAV_ITEMS = {
     { label: "My Orders", href: "/dashboard/buyer/my-orders", icon: Package },
     { label: "Saved Items", href: "/dashboard/buyer/wishlist", icon: Heart },
     { label: "Cart", href: "/dashboard/buyer/card", icon: BaggageClaim },
+    { label: "payment history", href: "/dashboard/buyer/payment-history", icon:  History },
     { label: "Account Profile", href: "/dashboard/buyer/profile-management", icon: Settings },
   ],
   seller: [

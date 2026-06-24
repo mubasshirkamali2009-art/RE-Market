@@ -1,6 +1,19 @@
 import { stripe } from '@/lib/stripe'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import {
+  CreditCard,
+  Store,
+  Mail,
+  User,
+  Calendar,
+  MapPin,
+  BadgeCheck,
+} from 'lucide-react'
+
+function formatPrice(n) {
+  return `৳ ${Number(n || 0).toLocaleString("en-US")}`;
+}
 
 export default async function Success({ searchParams }) {
   // Await searchParams in Next.js 15+
@@ -23,12 +36,26 @@ export default async function Success({ searchParams }) {
     const customerEmail = session.customer_details?.email || session.metadata?.userEmail;
     const meta = session.metadata || {};
 
-    // ─── FIX NODE SERVER RESOLUTION URL ───
-    // Server-side parsing-er jonno target backup link strict dynamically provide kora safe:
+    // ─── 🛠️ FIXED ENVIRONMENT VARIABLE STRING ASSIGNMENT ───
     const apiBase = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5000";
+
+    // ── NEW: fetch product + seller details for display ──
+    let product = null;
+    if (meta.productId) {
+      try {
+        const productRes = await fetch(`${apiBase}/api/products/${meta.productId}`);
+        if (productRes.ok) {
+          product = await productRes.json();
+        }
+      } catch (err) {
+        console.error("Failed to load product details:", err);
+      }
+    }
+    // ── END NEW ──
 
     try {
       // Step 1: Save the payment history snapshot record
+      console.log("hello")
       const paymentResponse = await fetch(`${apiBase}/api/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,8 +69,8 @@ export default async function Success({ searchParams }) {
           metadata: meta,
         }),
       });
-
-      // Step 2: Push Order to ordersCollections using your Express endpoint schema
+      console.log(paymentResponse)
+   
       if (meta.productId) {
         await fetch(`${apiBase}/api/orders`, {
           method: 'POST',
@@ -64,6 +91,19 @@ export default async function Success({ searchParams }) {
       console.error("Database structural sync failed on page landing:", dbError);
     }
 
+    // ── NEW: derived display values ──
+    const productImage =
+      Array.isArray(product?.images) && product.images.length > 0
+        ? product.images[0]
+        : "/placeholder-product.png";
+    const seller = product?.sellerInfo || {};
+    const paidAmount = (session.amount_total || 0) / 100;
+    const transactionId = session.payment_intent?.id || session.id;
+    const paidAt = session.payment_intent?.created
+      ? new Date(session.payment_intent.created * 1000)
+      : new Date();
+    // ── END NEW ──
+
     return (
       <section className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
@@ -74,6 +114,88 @@ export default async function Success({ searchParams }) {
           <p className="text-sm text-gray-600 mb-6">
             Thank you for purchasing <strong>{productName}</strong>. A confirmation email has been dispatched to <span className="font-medium text-gray-900">{customerEmail}</span>.
           </p>
+
+          {/* ── NEW: product, seller, and payment detail cards ── */}
+          <div className="text-left space-y-4 mb-6">
+
+            {/* Product */}
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Product
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-white border border-gray-100 flex-shrink-0">
+                  <img
+                    src={productImage}
+                    alt={product?.name || productName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {product?.category && (
+                    <p className="text-xs font-medium text-green-600 mb-0.5">{product.category}</p>
+                  )}
+                  <p className="text-sm font-semibold text-gray-900 leading-snug truncate">
+                    {product?.name || productName}
+                  </p>
+                  <p className="text-base font-bold text-gray-900 mt-1">
+                    {formatPrice(paidAmount)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seller */}
+            {(seller.name || seller.email) && (
+              <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  Seller
+                </p>
+                <div className="space-y-2.5">
+                  {seller.name && <DetailRow icon={Store} label="Name" value={seller.name} />}
+                  {seller.email && <DetailRow icon={Mail} label="Email" value={seller.email} />}
+                  {seller.location && <DetailRow icon={MapPin} label="Location" value={seller.location} />}
+                </div>
+              </div>
+            )}
+
+            {/* Payment */}
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Payment Details
+              </p>
+              <div className="space-y-2.5">
+                <DetailRow icon={User} label="Buyer" value={customerEmail} />
+                <DetailRow
+                  icon={CreditCard}
+                  label="Amount Paid"
+                  value={formatPrice(paidAmount)}
+                  valueClass="font-bold text-gray-900"
+                />
+                <DetailRow
+                  icon={BadgeCheck}
+                  label="Status"
+                  value={session.payment_status}
+                  valueClass="text-green-600 font-semibold capitalize"
+                />
+                <DetailRow
+                  icon={Calendar}
+                  label="Date"
+                  value={paidAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                />
+                <div className="pt-2.5 border-t border-gray-100">
+                  <p className="text-[11px] text-gray-400">
+                    Transaction ID:{" "}
+                    <span className="font-mono text-gray-600 text-[11px] break-all">
+                      {transactionId}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ── END NEW ── */}
+
           <Link
             href="/" 
             className="inline-block w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-semibold transition-colors"
@@ -84,4 +206,19 @@ export default async function Success({ searchParams }) {
       </section>
     )
   }
+}
+
+function DetailRow({ icon: Icon, label, value, valueClass = "text-gray-700" }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-2.5">
+      <div className="w-6 h-6 rounded-md bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Icon className="w-3.5 h-3.5 text-gray-500" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-gray-400">{label}</p>
+        <p className={`text-xs leading-snug break-words ${valueClass}`}>{value}</p>
+      </div>
+    </div>
+  );
 }
