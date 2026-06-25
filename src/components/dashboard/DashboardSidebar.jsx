@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   BaggageClaim
   ,
+  MonitorCog ,
    History
 } from "lucide-react";
 import { Button, Drawer } from "@heroui/react";
@@ -28,6 +29,7 @@ const ROLE_NAV_ITEMS = {
     { label: "Manage Orders", href: "/dashboard/admin/manage-orders", icon: ShoppingBag },
     { label: "Manage Products", href: "/dashboard/admin/manage-products", icon: Boxes },
     { label: "Manage Users", href: "/dashboard/admin/manage-users", icon: Users },
+    { label: "Monitor Payments", href: "/dashboard/admin/monitorallpayments", icon: MonitorCog },
     { label: "System Analytics", href: "/dashboard/admin/platform-analytics", icon: BarChart3 },
     
   ],
