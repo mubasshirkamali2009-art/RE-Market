@@ -113,7 +113,7 @@ export default function CategoriesSection() {
     <section className="w-full py-10 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-7">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 uppercase tracking-widest mb-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-widest mb-2">
           🛒 Browse
         </span>
         <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
@@ -130,8 +130,8 @@ export default function CategoriesSection() {
             {/* Group label */}
             <div className="flex items-center gap-2 mb-3">
               <span className="text-base">{group.emoji}</span>
-              <h3 className="text-sm font-bold text-gray-700">{group.group}</h3>
-              <div className="flex-1 h-px bg-gray-100 ml-1" />
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300">{group.group}</h3>
+              <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800 ml-1" />
             </div>
 
             {/* Items grid */}
@@ -149,12 +149,12 @@ export default function CategoriesSection() {
                   whileHover={{ y: -3, transition: { duration: 0.18 } }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleCategoryClick(item.name)}
-                  className="flex flex-col items-center gap-1.5 p-2.5 sm:p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-green-200 hover:bg-green-50 transition-all cursor-pointer group"
+                  className="flex flex-col items-center gap-1.5 p-2.5 sm:p-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-green-200 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all cursor-pointer group"
                 >
                   <span className="text-2xl sm:text-3xl leading-none group-hover:scale-110 transition-transform duration-200">
                     {item.icon}
                   </span>
-                  <span className="text-[10px] sm:text-xs font-medium text-gray-600 group-hover:text-green-700 text-center leading-tight line-clamp-2">
+                  <span className="text-[10px] sm:text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-green-700 dark:group-hover:text-green-400 text-center leading-tight line-clamp-2">
                     {item.name}
                   </span>
                 </motion.button>
